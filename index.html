@@ -249,6 +249,14 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 .rdl{width:16px;height:16px;border-radius:3px;border:1px solid transparent;background:transparent;
   color:var(--text-dim);font-size:calc(8px * var(--font-scale));cursor:pointer;transition:all .12s}
 .rdl:hover{border-color:var(--danger);color:var(--danger)}
+.print-only{display:none}
+.print-sheet{display:none}
+.pl-box{border:1px solid #333;padding:8px 10px;margin-bottom:10px;background:#fff}
+.pl-title{font-size:12px;font-weight:700;margin-bottom:6px;color:#111}
+.pl-table{width:100%;border-collapse:collapse;font-size:11px}
+.pl-table th,.pl-table td{border:1px solid #222;padding:4px 6px;vertical-align:middle}
+.pl-table th{background:#2f6f60;color:#fff;font-weight:700}
+.pl-note{font-size:11px;color:#555;padding:6px 2px}
 
 /* ===== OVERLAYS ===== */
 .ov{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);
@@ -336,32 +344,22 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 /* ===== PRINT ===== */
 @media print{
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-  body{background:#0d1a2a!important;background-image:none!important}
-  .h-acts,.left,.no-print,.ov{display:none!important}
-  header{position:relative}
-  .layout{display:block!important}
-  .right{overflow:visible!important;padding:0!important;height:auto!important}
-  .ph{display:block!important;margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid #00d4ff}
-  .ph h2{font-size:16pt;color:#00d4ff;margin-bottom:3px}
-  .ph p{font-size:10pt;color:#8899bb}
-  .stb{border:1px solid #2a3f5f;background:#1e2d42;break-inside:avoid;margin-bottom:10px}
-  .sth{background:#243447}
-  .slot{background:#1a2332;break-inside:avoid;border:1px solid #2a3f5f}
-  .slot.keep{background:rgba(0,230,118,.08)!important;border-color:rgba(0,230,118,.5)!important}
-  .slot.replace{background:rgba(255,107,53,.1)!important;border-color:rgba(255,107,53,.6)!important}
-  .slot.new-a{background:rgba(0,212,255,.08)!important;border-color:rgba(0,212,255,.5)!important;animation:none!important}
-  .sacts,.rdl,.s-editor{display:none!important}
-  .logp{break-inside:avoid;margin-top:12px;border:1px solid #2a3f5f;background:#1e2d42}
-  .logh{background:#243447}
-  .lt th{background:#243447}
-
-  /* 変更: 印刷時は金型配置図を非表示にし、変更一覧テーブルを強調表示 */
-  .stb, .slot, .rh, .mach-l, .leg{display:none!important;}
-  .logp{display:block!important;width:100%!important;}
-  .lt{display:table!important;width:100%!important;border-collapse:collapse!important;}
-  .lt th, .lt td{border:1px solid #2a3f5f!important;padding:6px 8px!important;}
-  .lt th{background:#243447!important;color:var(--text)!important;font-weight:700!important;}
-  .lt td{background:#1e2d42!important;color:var(--text)!important;}
+  body{background:#fff!important;background-image:none!important;color:#111!important}
+  .left,.no-print,.ov,.rh,#turret,.logp{display:none!important}
+  header{position:relative;border:none!important;box-shadow:none!important;background:#fff!important;padding:0 0 6px!important}
+  .h-icon,.h-stats,.h-acts{display:none!important}
+  .h-title{color:#111!important;font-size:14pt!important}
+  .h-title span{color:#444!important;font-size:9pt!important}
+  .layout{display:block!important;height:auto!important}
+  .right{overflow:visible!important;padding:0!important;height:auto!important;gap:0!important}
+  .ph{display:block!important;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #333}
+  .ph h2{font-size:13pt;color:#111;margin-bottom:2px}
+  .ph p{font-size:9pt;color:#333}
+  .print-only,.print-sheet{display:block!important}
+  .pl-box{break-inside:avoid;page-break-inside:avoid}
+  .pl-table th{background:#2f6f60!important;color:#fff!important}
+  .pl-table td{background:#fff!important;color:#111!important}
+  .pl-all tr.st-replace td,.pl-all tr.st-new-a td{background:#fff4e8!important}
 }
 .ph{display:none}
 </style>
@@ -464,6 +462,31 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
       </div>
     </div>
     <div id="turret"></div>
+    <div class="print-only print-sheet" id="printSheet">
+      <div class="pl-box">
+        <div class="pl-title">金型一覧（現状態）</div>
+        <table class="pl-table pl-all">
+          <thead>
+            <tr>
+              <th>数</th><th>#</th><th>金型No</th><th>ステーション</th><th>形状</th><th>サイズ</th><th>詳細</th><th>用途</th><th>状態</th>
+            </tr>
+          </thead>
+          <tbody id="plAllBody"></tbody>
+        </table>
+      </div>
+      <div class="pl-box">
+        <div class="pl-title">入替一覧（変更があるスロット）</div>
+        <div class="pl-note" id="plRepEmpty">入替はありません。</div>
+        <table class="pl-table" id="plRepTable">
+          <thead>
+            <tr>
+              <th>#</th><th>ST/Sl</th><th>金型No</th><th>変更前</th><th>変更後</th><th>詳細</th><th>備考</th>
+            </tr>
+          </thead>
+          <tbody id="plRepBody"></tbody>
+        </table>
+      </div>
+    </div>
     <!-- 変更一覧 -->
     <div class="logp">
       <div class="logh">
@@ -905,7 +928,75 @@ function renderAll(){
   renderCands();
   updateStats();
   renderLog();
+  renderPrintTables();
   queueAutoSave();
+}
+
+function renderPrintTables(){
+  const allBody=document.getElementById('plAllBody');
+  const repBody=document.getElementById('plRepBody');
+  const repEmpty=document.getElementById('plRepEmpty');
+  const repTable=document.getElementById('plRepTable');
+  if(!allBody||!repBody||!repEmpty||!repTable) return;
+  const order=['A','B','C','D','E','G'];
+  const sorted=[...slots].sort((a,b)=>{
+    const so=order.indexOf(a.st)-order.indexOf(b.st);
+    if(so!==0) return so;
+    return (Number(a.num)||0)-(Number(b.num)||0);
+  });
+
+  let idx=0;
+  allBody.innerHTML=sorted.map(s=>{
+    idx++;
+    const st2=slotStat(s);
+    const shape=s.nShape||s.shape||'―';
+    const size=s.nSize||s.size||'―';
+    const detail=s.nDetail||s.detail||'―';
+    const purpose=s.nPurpose||s.purpose||'―';
+    const moldNo=s.nNo||s.no||'―';
+    const stateLabel=st2==='replace'?'入替':st2==='new-a'?'新規':st2==='empty'?'空き':'継続';
+    const stLabel=`${s.st}(${ST[s.st]?.range||''})`;
+    return `<tr class="st-${st2}">
+      <td>${idx}</td>
+      <td>${s.num||''}</td>
+      <td>${escHtml(String(moldNo))}</td>
+      <td>${escHtml(stLabel)}</td>
+      <td>${escHtml(shape)}</td>
+      <td>${escHtml(size)}</td>
+      <td>${escHtml(detail)}</td>
+      <td>${escHtml(purpose)}</td>
+      <td>${stateLabel}</td>
+    </tr>`;
+  }).join('');
+
+  const changed=sorted.filter(s=>s.nShape);
+  if(!changed.length){
+    repBody.innerHTML='';
+    repEmpty.style.display='block';
+    repTable.style.display='none';
+    return;
+  }
+  repEmpty.style.display='none';
+  repTable.style.display='table';
+  let cidx=0;
+  repBody.innerHTML=changed.map(s=>{
+    cidx++;
+    const bShape=s.oShape||s.shape||'―';
+    const bSize=s.oSize||s.size||'―';
+    const aShape=s.nShape||'―';
+    const aSize=s.nSize||'―';
+    const noBefore=s.no||'―';
+    const noAfter=s.nNo||'CUSTOM';
+    return `<tr>
+      <td>${cidx}</td>
+      <td>${escHtml(`${s.st}-${s.num}`)}</td>
+      <td>${escHtml(String(noBefore))} → ${escHtml(String(noAfter))}</td>
+      <td>${escHtml(`${bShape} ${bSize}`)}</td>
+      <td>${escHtml(`${aShape} ${aSize}`)}</td>
+      <td>${escHtml(s.nDetail||s.detail||'―')}</td>
+      <td>${escHtml(s.note||'―')}</td>
+    </tr>`;
+  }).join('');
 }
 
 function slotStat(s){
@@ -1921,6 +2012,7 @@ function exportCSV(){
 }
 
 function doPrint(){
+  renderPrintTables();
   const creatorName=displayName(myName)||'―';
   document.getElementById('ph-dt').textContent=
     `作成日時：${new Date().toLocaleString('ja-JP')} ／ 作成者：${creatorName} ／ EMZ3612M2E ／ 日建フレメックス株式会社`;
