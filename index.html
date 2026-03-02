@@ -474,7 +474,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
         <table class="pl-table pl-all">
           <thead>
             <tr>
-              <th>数</th><th>#</th><th>金型No</th><th>ステーション</th><th>形状</th><th>サイズ</th><th>詳細</th><th>用途</th><th>状態</th>
+              <th>金型No</th><th>ステーション</th><th>形状</th><th>サイズ</th>
             </tr>
           </thead>
           <tbody id="plAllBody"></tbody>
@@ -486,7 +486,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
         <table class="pl-table" id="plRepTable">
           <thead>
             <tr>
-              <th>#</th><th>ST/Sl</th><th>金型No</th><th>変更前</th><th>変更後</th><th>詳細</th><th>備考</th>
+              <th>金型No</th><th>ステーション</th><th>形状</th><th>サイズ</th>
             </tr>
           </thead>
           <tbody id="plRepBody"></tbody>
@@ -945,48 +945,34 @@ function buildPrintRows(){
     return (Number(a.num)||0)-(Number(b.num)||0);
   });
 
-  let idx=0;
   const allRows=sorted.map(s=>{
-    idx++;
     const st2=slotStat(s);
     const shape=s.nShape||s.shape||'―';
     const size=s.nSize||s.size||'―';
-    const detail=s.nDetail||s.detail||'―';
-    const purpose=s.nPurpose||s.purpose||'―';
     const moldNo=s.nNo||s.no||'―';
-    const stateLabel=st2==='replace'?'入替':st2==='new-a'?'新規':st2==='empty'?'空き':'継続';
     const stLabel=`${s.st}(${ST[s.st]?.range||''})`;
     return `<tr class="st-${st2}">
-      <td>${idx}</td>
-      <td>${s.num||''}</td>
       <td>${escHtml(String(moldNo))}</td>
       <td>${escHtml(stLabel)}</td>
       <td>${escHtml(shape)}</td>
       <td>${escHtml(size)}</td>
-      <td>${escHtml(detail)}</td>
-      <td>${escHtml(purpose)}</td>
-      <td>${stateLabel}</td>
     </tr>`;
   }).join('');
 
   const changed=sorted.filter(s=>s.nShape);
-  let cidx=0;
   const repRows=changed.map(s=>{
-    cidx++;
     const bShape=s.oShape||s.shape||'―';
     const bSize=s.oSize||s.size||'―';
     const aShape=s.nShape||'―';
     const aSize=s.nSize||'―';
     const noBefore=s.no||'―';
     const noAfter=s.nNo||'CUSTOM';
+    const stLabel=`${s.st}(${ST[s.st]?.range||''})`;
     return `<tr>
-      <td>${cidx}</td>
-      <td>${escHtml(`${s.st}-${s.num}`)}</td>
       <td>${escHtml(String(noBefore))} → ${escHtml(String(noAfter))}</td>
-      <td>${escHtml(`${bShape} ${bSize}`)}</td>
-      <td>${escHtml(`${aShape} ${aSize}`)}</td>
-      <td>${escHtml(s.nDetail||s.detail||'―')}</td>
-      <td>${escHtml(s.note||'―')}</td>
+      <td>${escHtml(stLabel)}</td>
+      <td>${escHtml(`${bShape} → ${aShape}`)}</td>
+      <td>${escHtml(`${bSize} → ${aSize}`)}</td>
     </tr>`;
   }).join('');
   return { allRows, repRows, hasChanged:changed.length>0 };
@@ -1017,7 +1003,7 @@ function doPrint(){
   const rows=buildPrintRows();
   const repSection=rows.hasChanged
     ?`<table class="pt"><thead><tr>
-      <th>#</th><th>ST/Sl</th><th>金型No</th><th>変更前</th><th>変更後</th><th>詳細</th><th>備考</th>
+      <th>金型No</th><th>ステーション</th><th>形状</th><th>サイズ</th>
     </tr></thead><tbody>${rows.repRows}</tbody></table>`
     :`<div class="empty">入替変更はありません。</div>`;
   const html=`<!doctype html>
@@ -1043,7 +1029,7 @@ h1{font-size:18px;margin:0 0 2px}p{font-size:12px;margin:0}
 <div class="box">
   <div class="ttl">金型一覧（全体）</div>
   <table class="pt"><thead><tr>
-    <th>数</th><th>#</th><th>金型No</th><th>ステーション</th><th>形状</th><th>サイズ</th><th>詳細</th><th>用途</th><th>状態</th>
+    <th>金型No</th><th>ステーション</th><th>形状</th><th>サイズ</th>
   </tr></thead><tbody>${rows.allRows}</tbody></table>
 </div>
 <div class="box">
