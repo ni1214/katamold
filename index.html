@@ -149,6 +149,12 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 .stn{font-size:calc(13px * var(--font-scale));font-weight:700}
 .stc{margin-left:auto;font-size:calc(12px * var(--font-scale));color:var(--text-dim)}
 .stc span{font-weight:700}
+.stops{display:flex;gap:4px;margin-left:8px}
+.st-op{padding:3px 7px;border:1px solid var(--border);border-radius:4px;background:var(--steel);color:var(--text-dim);
+  font-size:calc(10px * var(--font-scale));cursor:pointer;font-family:'Noto Sans JP',sans-serif;transition:all .12s}
+.st-op:hover{color:var(--accent);border-color:var(--accent)}
+.st-op.add:hover{color:var(--success);border-color:var(--success)}
+.st-op.del:hover{color:var(--danger);border-color:var(--danger)}
 .slg{padding:8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(calc(118px * var(--font-scale)),1fr));gap:6px}
 
 /* ===== SLOT ===== */
@@ -999,6 +1005,55 @@ function renderPrintTables(){
   }).join('');
 }
 
+function nextSlotNum(st){
+  const nums=slots.filter(s=>s.st===st).map(s=>Number(s.num)||0);
+  return nums.length?Math.max(...nums)+1:1;
+}
+
+function addEmptySlot(st){
+  if(!editing){ toast('現在他のユーザーが編集中です。読み取り専用です','warn'); return; }
+  const num=nextSlotNum(st);
+  slots.push({
+    num,
+    no:0,
+    st,
+    shape:'―',
+    size:'―',
+    detail:'空き',
+    purpose:''
+  });
+  renderAll();
+  toast(`✅ ${ST[st].name} に空スロット Sl.${num} を追加しました`,'ok');
+}
+
+function findRemovableEmptySlotIndex(st){
+  let idx=-1;
+  let maxNum=-Infinity;
+  slots.forEach((s,i)=>{
+    if(s.st!==st) return;
+    if(slotStat(s)!=='empty') return;
+    const n=Number(s.num)||0;
+    if(n>maxNum){
+      maxNum=n;
+      idx=i;
+    }
+  });
+  return idx;
+}
+
+function removeEmptySlot(st){
+  if(!editing){ toast('現在他のユーザーが編集中です。読み取り専用です','warn'); return; }
+  const idx=findRemovableEmptySlotIndex(st);
+  if(idx<0){
+    toast(`${ST[st].name} に削除できる空スロットがありません`,'warn');
+    return;
+  }
+  const removed=slots[idx];
+  slots.splice(idx,1);
+  renderAll();
+  toast(`↺ ${ST[st].name} の空スロット Sl.${removed.num} を削除しました`,'info');
+}
+
 function slotStat(s){
   if(s.shape==='―'&&!s.nShape) return 'empty';
   if(s.nShape) return s.shape==='―'?'new-a':'replace';
@@ -1110,6 +1165,10 @@ function renderTurret(){
       <div class="stk" style="color:${info.color}">${key}</div>
       <div class="stn">${info.name}<span style="font-size:calc(11px * var(--font-scale));color:var(--text);opacity:0.75;font-weight:400;margin-left:8px">${info.range}</span></div>
       <div class="stc"><span style="color:${info.color}">${ss.length}/${all.length}</span>ST ｜ 継続<span style="color:var(--success)">${kn}</span> ｜ 変更<span style="color:var(--accent2)">${rn}</span></div>
+      <div class="stops no-print">
+        <button class="st-op add" onclick="addEmptySlot('${key}')" title="${info.name} に空スロットを追加">＋空き</button>
+        <button class="st-op del" onclick="removeEmptySlot('${key}')" title="${info.name} の空スロットを削除">－空き</button>
+      </div>
     </div><div class="slg" id="g-${key}"></div>`;
     con.appendChild(b);
     const g=b.querySelector(`#g-${key}`);
