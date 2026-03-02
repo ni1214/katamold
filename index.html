@@ -122,6 +122,12 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 .leg{display:flex;gap:10px;flex-wrap:wrap}
 .lei{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-dim)}
 .led{width:7px;height:7px;border-radius:50%}
+.view-switch{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:var(--steel)}
+.vs-btn{padding:5px 10px;border:none;border-right:1px solid var(--border);background:transparent;color:var(--text-dim);
+  font-size:11px;font-weight:600;cursor:pointer;font-family:'Noto Sans JP',sans-serif;transition:all .12s}
+.vs-btn:last-child{border-right:none}
+.vs-btn:hover{color:var(--accent)}
+.vs-btn.on{background:var(--accent);color:#000}
 .stb{background:var(--card);border:1px solid var(--border);border-radius:9px;overflow:hidden}
 .sth{background:var(--steel-mid);padding:8px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
 .stk{font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700}
@@ -408,6 +414,10 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
     <div class="rh">
       <div class="sec-t"><span>●</span>タレット ステーション配置図</div>
       <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">
+        <div class="view-switch" id="viewSwitch">
+          <button class="vs-btn on" id="viewModeReplaceBtn" onclick="setViewMode('replacement')">入替表示</button>
+          <button class="vs-btn" id="viewModeDefaultBtn" onclick="setViewMode('default')">デフォルト表示</button>
+        </div>
         <div class="leg">
           <div class="lei"><div class="led" style="background:var(--success)"></div>継続</div>
           <div class="lei"><div class="led" style="background:var(--accent2)"></div>入替済</div>
@@ -492,6 +502,32 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
     <button class="btn primary" style="width:100%;margin-bottom:7px;padding:9px;font-size:12px;justify-content:center"
             onclick="applyCm()">✅ この内容で入替える</button>
     <button class="m-close" onclick="closeOv('cmOv')">キャンセル</button>
+  </div>
+</div>
+
+<!-- デフォルト値編集モーダル -->
+<div class="ov" id="baseOv">
+  <div class="modal cm-modal">
+    <h3>🛠️ デフォルト金型を編集</h3>
+    <p id="bm-sub"></p>
+    <div class="fg"><label>金型No</label>
+      <input type="text" id="bm-no" placeholder="例: 105"></div>
+    <div class="fr">
+      <div class="fg"><label>形状 *</label>
+        <select id="bm-sh">
+          <option>丸</option><option>角</option><option>長角</option><option>長丸</option>
+          <option>バーリング</option><option>サラ</option><option>刻印</option><option>ポンチ</option><option>特型</option><option>その他</option><option>―</option>
+        </select></div>
+      <div class="fg"><label>サイズ *</label>
+        <input type="text" id="bm-sz" placeholder="例: 8Φ / 10x8"></div>
+    </div>
+    <div class="fg"><label>詳細・条件</label>
+      <input type="text" id="bm-dt" placeholder="例: CL=0.30, 空き"></div>
+    <div class="fg"><label>用途</label>
+      <input type="text" id="bm-purpose" placeholder="例: M4タップ下穴"></div>
+    <button class="btn primary" style="width:100%;margin-bottom:7px;padding:9px;font-size:12px;justify-content:center"
+            onclick="saveBaseSlot()">✅ デフォルトを保存</button>
+    <button class="m-close" onclick="closeOv('baseOv')">キャンセル</button>
   </div>
 </div>
 
@@ -696,6 +732,7 @@ let lockToastKey='';
 let sessionId = Math.random().toString(36).substr(2, 9);
 let editing = false;
 let myName=SHARED_NAME, myColor=SHARED_COLOR;
+let turretViewMode='replacement';
 
 function normalizeSlotMeta(s){
   if(s.purpose===undefined||s.purpose===null) s.purpose='';
@@ -732,6 +769,49 @@ function slotStat(s){
   return 'keep';
 }
 
+function slotDisplay(s){
+  if(turretViewMode==='default'){
+    return {
+      shape:s.shape||'―',
+      size:s.size||'―',
+      detail:s.detail||'',
+      purpose:s.purpose||''
+    };
+  }
+  return {
+    shape:s.nShape||s.shape||'―',
+    size:s.nSize||s.size||'―',
+    detail:s.nDetail||s.detail||'',
+    purpose:s.nPurpose||s.purpose||''
+  };
+}
+
+function openSlotEditor(e,idx){
+  if(turretViewMode==='default'){
+    openBaseOv(e,idx);
+    return;
+  }
+  openSlotOv(e,idx);
+}
+
+function updateViewSwitchUi(){
+  const repBtn=document.getElementById('viewModeReplaceBtn');
+  const defBtn=document.getElementById('viewModeDefaultBtn');
+  if(repBtn) repBtn.classList.toggle('on',turretViewMode==='replacement');
+  if(defBtn) defBtn.classList.toggle('on',turretViewMode==='default');
+}
+
+function setViewMode(mode){
+  if(mode!=='replacement'&&mode!=='default') return;
+  if(turretViewMode===mode){
+    updateViewSwitchUi();
+    return;
+  }
+  turretViewMode=mode;
+  updateViewSwitchUi();
+  renderTurret();
+}
+
 function renderTurret(){
   const con=document.getElementById('turret'); con.innerHTML='';
   ['A','B','C','D','E','G'].forEach(key=>{
@@ -751,7 +831,9 @@ function renderTurret(){
     con.appendChild(b);
     const g=b.querySelector(`#g-${key}`);
     ss.forEach(s=>{
-      const st2=slotStat(s), dsh=s.nShape||s.shape, dsz=s.nSize||s.size, ddt=s.nDetail||s.detail;
+      const st2=slotStat(s);
+      const dv=slotDisplay(s);
+      const dsh=dv.shape, dsz=dv.size, ddt=dv.detail;
       const idx=slots.indexOf(s);
       const el=document.createElement('div');
       el.className=`slot ${st2}`;
@@ -759,7 +841,8 @@ function renderTurret(){
       const shownEditor=displayName(s.editor);
       const editorBadge=shownEditor
         ?`<div class="s-editor" style="background:${s.editorColor||'var(--accent)'}22;color:${s.editorColor||'var(--accent)'}">● ${escHtml(shownEditor)}</div>`:'';
-      const purp = s.nPurpose || s.purpose || '';
+      const purp=dv.purpose||'';
+      const editTitle=turretViewMode==='default'?'デフォルト編集':'入替';
       el.innerHTML=`${editorBadge}
         <div class="sdot"></div>
         <div class="s-ico">${ic(dsh)}</div>
@@ -769,13 +852,23 @@ function renderTurret(){
         ${purp?`<div class="s-purpose">用途: ${escHtml(purp)}</div>`:''}
         <div class="s-no">No.${s.no||'―'} / Sl.${s.num}</div>
         <div class="sacts">
-          <div class="sa" title="入替" onclick="openSlotOv(event,${idx})">✎</div>
+          <div class="sa" title="${editTitle}" onclick="openSlotEditor(event,${idx})">✎</div>
           ${st2!=='keep'&&st2!=='empty'?`<div class="sa rv" title="元に戻す" onclick="doRestore(event,${idx})">↩</div>`:''}
         </div>`;
       el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('dov')});
       el.addEventListener('dragleave',()=>el.classList.remove('dov'));
-      el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('dov');const cid=e.dataTransfer.getData('text/plain');if(cid)applyC(idx,cid);});
-      el.addEventListener('click',()=>openSlotOv(null,idx));
+      el.addEventListener('drop',e=>{
+        e.preventDefault();
+        el.classList.remove('dov');
+        const cid=e.dataTransfer.getData('text/plain');
+        if(!cid) return;
+        if(turretViewMode!=='replacement'){
+          toast('デフォルト表示中は入替できません。表示を「入替表示」に切り替えてください。','info');
+          return;
+        }
+        applyC(idx,cid);
+      });
+      el.addEventListener('click',()=>openSlotEditor(null,idx));
       g.appendChild(el);
     });
   });
@@ -943,6 +1036,67 @@ function resetAll(){
 // ================================================================
 // MODALS
 // ================================================================
+function openBaseOv(e,idx){
+  if(e) e.stopPropagation();
+  actIdx=idx;
+  const s=slots[idx];
+  if(!s) return;
+  const noEl=document.getElementById('bm-no');
+  const shEl=document.getElementById('bm-sh');
+  const szEl=document.getElementById('bm-sz');
+  const dtEl=document.getElementById('bm-dt');
+  const pEl=document.getElementById('bm-purpose');
+  const subEl=document.getElementById('bm-sub');
+  if(subEl) subEl.textContent=`${ST[s.st].name} スロット${s.num} のデフォルト情報`;
+  if(noEl) noEl.value=(s.no===undefined||s.no===null)?'':String(s.no);
+  if(shEl) shEl.value=s.shape||'丸';
+  if(szEl) szEl.value=(s.size&&s.size!=='―')?s.size:'';
+  if(dtEl) dtEl.value=(s.detail&&s.detail!=='―'&&s.detail!=='空き')?s.detail:'';
+  if(pEl) pEl.value=s.purpose||'';
+  document.getElementById('baseOv').classList.add('open');
+}
+
+function saveBaseSlot(){
+  if(actIdx===null||actIdx===undefined) return;
+  if(!editing){ toast('現在他のユーザーが編集中です。読み取り専用です','warn'); return; }
+  const s=slots[actIdx];
+  if(!s) return;
+  const sh=document.getElementById('bm-sh').value;
+  const sizeInput=document.getElementById('bm-sz').value.trim();
+  const detailInput=document.getElementById('bm-dt').value.trim();
+  const purpose=document.getElementById('bm-purpose').value.trim();
+  const noInput=document.getElementById('bm-no').value.trim();
+  if(sh!=='―'&&!sizeInput){ toast('サイズを入力してください','warn'); return; }
+
+  let moldNo=noInput;
+  if(noInput===''){
+    moldNo=0;
+  }else if(/^\d+$/.test(noInput)){
+    moldNo=Number(noInput);
+  }
+
+  const nextSize=(sh==='―')?'―':sizeInput;
+  const nextDetail=(sh==='―')?(detailInput||'空き'):(detailInput||'―');
+  s.no=moldNo;
+  s.shape=sh;
+  s.size=nextSize;
+  s.detail=nextDetail;
+  s.purpose=purpose;
+  // 入替データがある場合は、復元先（元データ）を今回のデフォルト値に更新
+  if(s.nShape){
+    s.oShape=sh;
+    s.oSize=nextSize;
+    s.oDetail=nextDetail;
+    s.oPurpose=purpose;
+  }
+  s.editor=myName;
+  s.editorColor=myColor;
+  s.at=new Date().toLocaleString('ja-JP');
+  renderAll();
+  closeOv('baseOv');
+  toast('✅ デフォルト情報を保存しました','ok');
+}
+
 function openSlotOv(e,idx){
   if(e) e.stopPropagation();
   actIdx=idx;
@@ -979,6 +1133,10 @@ function openSlotOv(e,idx){
 }
 
 function openCandModal(cid){
+  if(turretViewMode!=='replacement'){
+    setViewMode('replacement');
+    toast('候補の適用は「入替表示」で実行します。','info');
+  }
   const c=cands.find(x=>x.id===cid); if(!c) return;
   document.getElementById('sm-sub').textContent=`「${c.shape} ${c.size}」を設置するスロットを選択`;
   const ml=document.getElementById('sm-list'); ml.innerHTML='';
@@ -1062,6 +1220,8 @@ document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{ if(e
           saveSlotPurposeOnly();
         }else if(id==='cm-purpose'){
           applyCm();
+        }else if(id==='bm-purpose'){
+          saveBaseSlot();
         }
       }
     });
@@ -1070,6 +1230,7 @@ document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{ if(e
   setTimeout(()=>{
     attachEnterHandler('sm-purpose');
     attachEnterHandler('cm-purpose');
+    attachEnterHandler('bm-purpose');
   },0);
 })();
 
@@ -1622,6 +1783,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   const myd=document.getElementById('myDot');
   if(myd) myd.style.background=myColor;
   if(myc) myc.style.display=shownMyName?'flex':'none';
+  updateViewSwitchUi();
   skipAutoSave=true;
   let restored=await initRemoteSync();
   if(!restored){
