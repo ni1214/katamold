@@ -396,9 +396,9 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
     <!-- 編集モードの切替ボタン -->
     <button class="btn warn" id="editBtn" onclick="startEditing()" style="display:none;">✏️ 編集開始</button>
     <button class="btn ok" id="endBtn" onclick="endEditing()" style="display:none;">✔ 編集終了（解放）</button>
-    <button id="saveJsonBtn" class="btn ok" onclick="expJSON()" style="transition:all .2s">💾 保存（JSON上書き）</button>
+    <button id="saveJsonBtn" class="btn ok" onclick="driveSaveNow(true)" style="transition:all .2s">☁ Drive保存</button>
     <button class="btn" onclick="openGuideOv()">📘 ステーション表</button>
-    <button class="btn" onclick="openSaveModal()" style="font-size:calc(11px * var(--font-scale))">📂 読込・その他</button>
+    <button class="btn" onclick="openSaveModal()" style="font-size:calc(11px * var(--font-scale))">☁ Drive同期・その他</button>
     <button class="btn primary" onclick="doPrint()">🖨️ 印刷・PDF</button>
     <button class="btn danger" onclick="resetAll()">↺ リセット</button>
   </div>
@@ -654,17 +654,15 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 <!-- 保存・共有モーダル -->
 <div class="ov" id="svOv">
   <div class="modal sv-modal">
-    <h3>💾 自動保存</h3>
-    <p>このPCのブラウザに自動保存されます。</p>
+    <h3>☁ Google Drive同期</h3>
+    <p>保存・読込・共有ロックは Google Drive のみで行います。</p>
     <div class="tabs">
-      <button class="tab on" onclick="switchTab('auto',this)">💾 自動保存</button>
-      <button class="tab" onclick="switchTab('backup',this)">📦 バックアップ</button>
-      <button class="tab" onclick="switchTab('drive',this)">☁ Google Drive</button>
+      <button class="tab on" onclick="switchTab('drive',this)">☁ Google Drive</button>
       <button class="tab" onclick="switchTab('print',this)">🖨️ 印刷・PDF</button>
     </div>
 
     <!-- 自動保存タブ -->
-    <div class="tc on" id="tc-auto">
+    <div class="tc" id="tc-auto">
       <div class="info-box">
         <strong>変更は自動保存</strong>され、リロードしても消えません。<br>
         社内ネットワークで同じURLを開けば他PCでも同じ状態を編集できます。
@@ -685,8 +683,8 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
         <div class="step-d">節目でJSONを1本出力しておくと、万一の復旧に使えます。</div></div>
       </div>
       <div class="warn-box" id="auto-status-box">
-        自動保存状態: <span id="autoStatusText">未保存</span><br>
-        共有同期状態: <span id="syncStatusText">未接続</span>
+        自動保存状態: <span id="autoStatusTextLegacy">未保存</span><br>
+        共有同期状態: <span id="syncStatusTextLegacy">未接続</span>
       </div>
     </div>
 
@@ -697,7 +695,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
         毎回同じ名前でダウンロードして<strong>上書き保存</strong>することで1ファイル運用できます。
       </div>
       <!-- 保存ボタン（未保存時は色が変わる） -->
-      <button id="saveJsonBtn" class="btn ok" style="width:100%;justify-content:center;margin-bottom:8px;padding:12px;font-size:calc(13px * var(--font-scale));font-weight:700;transition:all .2s"
+      <button id="backupJsonBtn" class="btn ok" style="width:100%;justify-content:center;margin-bottom:8px;padding:12px;font-size:calc(13px * var(--font-scale));font-weight:700;transition:all .2s"
               onclick="expJSON()">💾 保存（JSON上書き）</button>
       <!-- 読み込みボタン -->
       <input type="file" id="jf" accept=".json" onchange="impJSON(this)" style="display:none">
@@ -710,10 +708,10 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
     </div>
 
     <!-- Google Driveタブ -->
-    <div class="tc" id="tc-drive">
+    <div class="tc on" id="tc-drive">
       <div class="info-box">
-        <strong>Google Drive連携</strong>（別PC共有向け）<br>
-        事前に用意した Google Apps Script の WebアプリURLを設定すると、保存・読込を同じDrive上で共有できます。
+        <strong>Google Drive連携（標準）</strong><br>
+        別PCを含む全端末で同じDriveファイルを共有し、編集ロックと自動同期を行います。
       </div>
       <div class="fg">
         <label>WebアプリURL（Apps Script）</label>
@@ -721,14 +719,16 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
       </div>
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
         <input id="driveAutoSync" type="checkbox" onchange="toggleDriveAutoSync(this.checked)">
-        <label for="driveAutoSync" style="font-size:calc(11px * var(--font-scale));color:var(--text-dim)">変更時にDriveへ自動保存</label>
+        <label for="driveAutoSync" style="font-size:calc(11px * var(--font-scale));color:var(--text-dim)">自動同期は常にON（固定）</label>
       </div>
       <button class="btn ok" style="width:100%;justify-content:center;margin-bottom:6px;padding:10px"
               onclick="driveSaveNow(true)">☁ Driveに保存</button>
       <button class="btn" style="width:100%;justify-content:center;margin-bottom:8px;padding:10px"
               onclick="driveLoadNow()">📥 Driveから読み込む</button>
       <div class="warn-box">
-        Drive同期状態: <span id="driveStatusText">未設定</span>
+        Drive同期状態: <span id="driveStatusText">未設定</span><br>
+        最終保存: <span id="autoStatusText">未保存</span><br>
+        共有同期状態: <span id="syncStatusText">未接続</span>
       </div>
     </div>
 
@@ -763,14 +763,13 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 // ================================================================
 const SHARED_NAME='共有モード';
 const SHARED_COLOR='#00d4ff';
-const AUTO_SAVE_KEY='moldSimulatorAutoSaveV1';
 const AUTO_SAVE_MS=700;
 const DRIVE_ENDPOINT_KEY='moldSimulatorDriveEndpointV1';
 const DRIVE_AUTO_SYNC_KEY='moldSimulatorDriveAutoSyncV1';
-const DRIVE_SYNC_DEBOUNCE_MS=2000;
-const REMOTE_STATE_URL='/api/state';
+const DRIVE_DEFAULT_ENDPOINT='https://script.google.com/macros/s/AKfycbwvdwCbGIBqquMdgJIAGBLEKRrKKriSq4oIMnkexK91n4U4EiryOF7HMyFC_fTZnjVv_A/exec';
+const DRIVE_DATA_FILENAME='金型入替計画_保存データ.json';
+const DRIVE_LOCK_FILENAME='金型入替計画_編集ロック.json';
 const REMOTE_POLL_MS=3000;
-const REMOTE_LOCK_URL='/api/lock';
 const REMOTE_LOCK_POLL_MS=2000;
 const REMOTE_LOCK_HEARTBEAT_MS=12000;
 const REMOTE_LOCK_TTL_MS=45000;
@@ -902,9 +901,9 @@ let turretShapeFilter='all';
 let turretSearchText='';
 let stationGuide=JSON.parse(JSON.stringify(DEFAULT_STATION_GUIDE));
 let driveEndpoint='';
-let driveAutoSync=false;
-let driveSyncTimer=null;
+let driveAutoSync=true;
 let driveSaveInFlight=false;
+let driveLoadInFlight=false;
 
 function normalizeSlotMeta(s){
   if(s.purpose===undefined||s.purpose===null) s.purpose='';
@@ -1708,11 +1707,14 @@ function updateDriveStatus(text){
 
 function loadDriveSettings(){
   try{
-    driveEndpoint=(localStorage.getItem(DRIVE_ENDPOINT_KEY)||'').trim();
-    driveAutoSync=localStorage.getItem(DRIVE_AUTO_SYNC_KEY)==='1';
+    const stored=(localStorage.getItem(DRIVE_ENDPOINT_KEY)||'').trim();
+    driveEndpoint=(stored||DRIVE_DEFAULT_ENDPOINT).trim();
+    driveAutoSync=true;
+    localStorage.setItem(DRIVE_ENDPOINT_KEY, driveEndpoint);
+    localStorage.setItem(DRIVE_AUTO_SYNC_KEY, '1');
   }catch(e){
-    driveEndpoint='';
-    driveAutoSync=false;
+    driveEndpoint=DRIVE_DEFAULT_ENDPOINT;
+    driveAutoSync=true;
   }
 }
 
@@ -1720,63 +1722,91 @@ function syncDriveSettingsUi(){
   const ep=document.getElementById('driveEndpoint');
   const chk=document.getElementById('driveAutoSync');
   if(ep) ep.value=driveEndpoint||'';
-  if(chk) chk.checked=!!driveAutoSync;
-  updateDriveStatus(driveEndpoint?'設定済み':'未設定');
+  if(chk){
+    chk.checked=true;
+    chk.disabled=true;
+  }
+  updateDriveStatus(driveEndpoint?'設定済み（自動同期ON）':'未設定');
 }
 
 function saveDriveSettingsFromUi(){
   const ep=document.getElementById('driveEndpoint');
-  driveEndpoint=(ep?ep.value:'').trim();
+  driveEndpoint=(ep?ep.value:'').trim()||DRIVE_DEFAULT_ENDPOINT;
   try{
     localStorage.setItem(DRIVE_ENDPOINT_KEY,driveEndpoint);
+    localStorage.setItem(DRIVE_AUTO_SYNC_KEY,'1');
   }catch(e){}
-  updateDriveStatus(driveEndpoint?'設定済み':'未設定');
+  updateDriveStatus(driveEndpoint?'設定済み（自動同期ON）':'未設定');
 }
 
 function toggleDriveAutoSync(checked){
-  driveAutoSync=!!checked;
-  try{
-    localStorage.setItem(DRIVE_AUTO_SYNC_KEY,driveAutoSync?'1':'0');
-  }catch(e){}
-  updateDriveStatus(driveEndpoint?(driveAutoSync?'設定済み（自動保存ON）':'設定済み（自動保存OFF）'):'未設定');
+  // Driveのみ運用のため自動同期は常時ON固定
+  driveAutoSync=true;
+  const chk=document.getElementById('driveAutoSync');
+  if(chk) chk.checked=true;
+  try{ localStorage.setItem(DRIVE_AUTO_SYNC_KEY,'1'); }catch(e){}
+  updateDriveStatus(driveEndpoint?'設定済み（自動同期ON）':'未設定');
 }
 
-function queueDriveSync(){
-  if(!driveAutoSync) return;
-  if(!driveEndpoint) return;
-  if(driveSyncTimer) clearTimeout(driveSyncTimer);
-  driveSyncTimer=setTimeout(()=>{ void driveSaveNow(false); }, DRIVE_SYNC_DEBOUNCE_MS);
+function driveRevisionFrom(ts){
+  const ms=Date.parse(ts||'');
+  return Number.isFinite(ms)?ms:0;
+}
+
+function errorLooksLikeMissingFile(msg){
+  const s=String(msg||'').toLowerCase();
+  return s.includes('not_found')||s.includes('file_not_found')||s.includes('notfound')||
+    s.includes('not found')||s.includes('no_file')||s.includes('missing_file')||
+    s.includes('見つか')||s.includes('ありません');
+}
+
+async function postDrive(bodyObj){
+  saveDriveSettingsFromUi();
+  if(!driveEndpoint) throw new Error('drive_endpoint_missing');
+  const res=await fetch(driveEndpoint,{
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify(bodyObj),
+    cache:'no-store'
+  });
+  if(!res.ok) throw new Error(`http_${res.status}`);
+  const out=await res.json();
+  if(out&&out.ok===false) throw new Error(out.error||'drive_api_failed');
+  return out||{};
+}
+
+async function driveSaveFile(filename, payload){
+  return postDrive({ action:'save', filename, payload });
+}
+
+async function driveLoadFile(filename, allowMissing=false){
+  try{
+    const out=await postDrive({ action:'load', filename });
+    return { payload:out.payload||null, modifiedTime:out.modifiedTime||null, raw:out, missing:false };
+  }catch(err){
+    if(allowMissing&&errorLooksLikeMissingFile(err&&err.message)) return { payload:null, modifiedTime:null, raw:null, missing:true };
+    throw err;
+  }
 }
 
 async function driveSaveNow(showToast){
   if(showToast===undefined) showToast=true;
-  saveDriveSettingsFromUi();
-  if(!driveEndpoint){
-    if(showToast) toast('DriveのWebアプリURLを設定してください','warn');
-    updateDriveStatus('未設定');
-    return false;
-  }
   if(driveSaveInFlight) return false;
   driveSaveInFlight=true;
+  const payload=buildStateObject();
   try{
-    const res=await fetch(driveEndpoint,{
-      method:'POST',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:JSON.stringify({
-        action:'save',
-        filename:JSON_FIXED_NAME,
-        payload:buildStateObject()
-      })
-    });
-    if(!res.ok) throw new Error(`http_${res.status}`);
-    const out=await res.json();
-    if(out&&out.ok===false) throw new Error(out.error||'drive_save_failed');
+    const out=await driveSaveFile(DRIVE_DATA_FILENAME, payload);
     const at=out&&out.modifiedTime?new Date(out.modifiedTime):new Date();
+    remoteRevision=Math.max(remoteRevision, driveRevisionFrom(out.modifiedTime||payload.at));
     updateDriveStatus(`最終保存: ${at.toLocaleString('ja-JP')}`);
+    updateAutoStatus(out&&out.modifiedTime?out.modifiedTime:payload.at);
+    updateSyncStatus('Google Drive同期中');
+    markSaved();
     if(showToast) toast('☁ Google Driveに保存しました','ok');
     return true;
   }catch(err){
     updateDriveStatus(`保存失敗: ${String(err.message||err)}`);
+    updateSyncStatus('Google Drive保存エラー');
     if(showToast) toast('Google Drive保存に失敗しました','err');
     return false;
   }finally{
@@ -1784,122 +1814,95 @@ async function driveSaveNow(showToast){
   }
 }
 
-async function driveLoadNow(){
-  saveDriveSettingsFromUi();
-  if(!driveEndpoint){
-    toast('DriveのWebアプリURLを設定してください','warn');
-    updateDriveStatus('未設定');
-    return false;
-  }
+async function driveLoadNow(showToast){
+  if(showToast===undefined) showToast=true;
+  if(driveLoadInFlight) return false;
+  driveLoadInFlight=true;
   try{
-    const res=await fetch(driveEndpoint,{
-      method:'POST',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:JSON.stringify({
-        action:'load',
-        filename:JSON_FIXED_NAME
-      })
-    });
-    if(!res.ok) throw new Error(`http_${res.status}`);
-    const out=await res.json();
-    if(out&&out.ok===false) throw new Error(out.error||'drive_load_failed');
-    if(!out||!out.payload||!out.payload.slots) throw new Error('payload_invalid');
+    const out=await driveLoadFile(DRIVE_DATA_FILENAME, true);
+    if(!out.payload||!out.payload.slots){
+      updateDriveStatus('初期状態（Driveに保存データなし）');
+      updateSyncStatus('Google Drive同期中');
+      if(showToast) toast('Driveに保存データがまだありません','info');
+      return false;
+    }
     const prev=skipAutoSave;
     skipAutoSave=true;
     applyPayload(out.payload);
     renderAll();
     skipAutoSave=prev;
+    const rev=driveRevisionFrom(out.modifiedTime||out.payload.at);
+    if(rev>0) remoteRevision=Math.max(remoteRevision,rev);
     updateAutoStatus(out.payload.at||out.modifiedTime||null);
     markSaved();
-    const at=out&&out.modifiedTime?new Date(out.modifiedTime):new Date();
+    const at=out&&out.modifiedTime?new Date(out.modifiedTime):new Date(out.payload.at||Date.now());
     updateDriveStatus(`最終読込: ${at.toLocaleString('ja-JP')}`);
-    toast('📥 Google Driveから読み込みました','info');
+    updateSyncStatus('Google Drive同期中');
+    if(showToast) toast('📥 Google Driveから読み込みました','info');
     return true;
   }catch(err){
     updateDriveStatus(`読込失敗: ${String(err.message||err)}`);
-    toast('Google Drive読込に失敗しました','err');
+    updateSyncStatus('Google Drive読込エラー');
+    if(showToast) toast('Google Drive読込に失敗しました','err');
     return false;
+  }finally{
+    driveLoadInFlight=false;
   }
-}
-
-function isRemoteCapable(){
-  return location.protocol==='http:'||location.protocol==='https:';
 }
 
 async function fetchRemoteState(){
-  const res=await fetch(`${REMOTE_STATE_URL}?_=${Date.now()}`,{cache:'no-store'});
-  if(!res.ok) throw new Error(`remote_get_${res.status}`);
-  return res.json();
-}
-
-function saveLocalNow(){
-  try{
-    const payload=buildPayload();
-    localStorage.setItem(AUTO_SAVE_KEY,payload);
-    const d=JSON.parse(payload);
-    updateAutoStatus(d.at||new Date().toISOString());
-    updateSyncStatus('ローカル保存モード');
-  }catch(e){
-    updateAutoStatus(null);
-  }
+  const out=await driveLoadFile(DRIVE_DATA_FILENAME, true);
+  const at=out.modifiedTime||(out.payload&&out.payload.at)||null;
+  const revision=driveRevisionFrom(at);
+  return { revision, payload:out.payload, at };
 }
 
 function startRemotePolling(){
   if(remotePollTimer) clearInterval(remotePollTimer);
-  remotePollTimer=setInterval(()=>{ void pollRemoteState(true); }, REMOTE_POLL_MS);
+  remotePollTimer=setInterval(()=>{ void pollRemoteState(false); }, REMOTE_POLL_MS);
 }
 
 async function pollRemoteState(showToast){
-  if(!remoteMode||saveInFlight) return false;
+  if(!remoteMode||saveInFlight||driveLoadInFlight) return false;
   try{
     const d=await fetchRemoteState();
+    if(!d.payload||!d.payload.slots) return false;
     const rev=Number(d.revision||0);
     if(rev<=remoteRevision) return false;
-    if(d.payload&&d.payload.slots){
-      remoteRevision=rev;
-      const prev=skipAutoSave;
-      skipAutoSave=true;
-      applyPayload(d.payload);
-      renderAll();
-      skipAutoSave=prev;
-      updateAutoStatus(d.at||d.payload.at||null);
-      updateSyncStatus(`共有同期中 (rev ${remoteRevision})`);
-      if(showToast) toast('🌐 他PCの変更を反映しました','info');
-      return true;
-    }
+    remoteRevision=rev;
+    const prev=skipAutoSave;
+    skipAutoSave=true;
+    applyPayload(d.payload);
+    renderAll();
+    skipAutoSave=prev;
+    updateAutoStatus(d.at||d.payload.at||null);
+    updateSyncStatus('Google Drive同期中');
+    if(showToast) toast('🌐 他PCの変更を反映しました','info');
+    return true;
   }catch(e){
-    updateSyncStatus('共有接続エラー（ローカル継続）');
+    updateSyncStatus('Google Drive同期エラー');
   }
   return false;
 }
 
 async function saveRemoteNow(){
-  if(!remoteMode){ saveLocalNow(); return; }
+  if(!remoteMode){
+    updateSyncStatus('Google Drive未接続');
+    return;
+  }
   if(saveInFlight){ pendingRemoteSave=true; return; }
   saveInFlight=true;
   const payloadObj=buildStateObject();
-  const writeOnce=async(baseRevision)=>fetch(REMOTE_STATE_URL,{
-    method:'PUT',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({baseRevision,payload:payloadObj})
-  });
   try{
-    let res=await writeOnce(remoteRevision);
-    if(res.status===409){
-      const c=await res.json();
-      remoteRevision=Number(c.revision||remoteRevision);
-      // 競合時は最新Revisionで再保存（後勝ち）
-      res=await writeOnce(remoteRevision);
-    }
-    if(!res.ok) throw new Error(`remote_put_${res.status}`);
-    const out=await res.json();
-    remoteRevision=Number(out.revision||remoteRevision);
-    updateAutoStatus(out.at||payloadObj.at||new Date().toISOString());
-    updateSyncStatus(`共有同期中 (rev ${remoteRevision})`);
+    const out=await driveSaveFile(DRIVE_DATA_FILENAME, payloadObj);
+    remoteRevision=Math.max(remoteRevision, driveRevisionFrom(out.modifiedTime||payloadObj.at));
+    updateAutoStatus(out&&out.modifiedTime?out.modifiedTime:payloadObj.at);
+    updateDriveStatus(`最終保存: ${new Date(out&&out.modifiedTime?out.modifiedTime:Date.now()).toLocaleString('ja-JP')}`);
+    updateSyncStatus('Google Drive同期中');
+    markSaved();
   }catch(e){
-    remoteMode=false;
-    updateSyncStatus('共有保存失敗（ローカルへ切替）');
-    saveLocalNow();
+    updateSyncStatus('Google Drive保存エラー');
+    updateDriveStatus(`保存失敗: ${String(e.message||e)}`);
   }finally{
     saveInFlight=false;
     if(pendingRemoteSave){
@@ -1912,7 +1915,7 @@ async function saveRemoteNow(){
 function saveAutoNow(){
   if(skipAutoSave) return;
   if(remoteMode){ void saveRemoteNow(); return; }
-  saveLocalNow();
+  updateSyncStatus('Google Drive未接続');
 }
 
 function queueAutoSave(){
@@ -1920,41 +1923,32 @@ function queueAutoSave(){
   markUnsaved();
   if(autoSaveTimer) clearTimeout(autoSaveTimer);
   autoSaveTimer=setTimeout(saveAutoNow,AUTO_SAVE_MS);
-  queueDriveSync();
-}
-
-function restoreAutoSave(){
-  try{
-    const raw=localStorage.getItem(AUTO_SAVE_KEY);
-    if(!raw) return false;
-    const d=JSON.parse(raw);
-    applyPayload(d);
-    updateAutoStatus(d.at||null);
-    return true;
-  }catch(e){
-    return false;
-  }
 }
 
 async function initRemoteSync(){
-  if(!isRemoteCapable()){
-    updateSyncStatus('ローカル保存モード');
+  saveDriveSettingsFromUi();
+  if(!driveEndpoint){
+    remoteMode=false;
+    updateSyncStatus('Drive URL未設定');
     return false;
   }
+  remoteMode=true;
+  updateSyncStatus('Google Drive同期中');
+  startRemotePolling();
   try{
     const d=await fetchRemoteState();
-    remoteMode=true;
     remoteRevision=Number(d.revision||0);
-    updateSyncStatus(`共有同期中 (rev ${remoteRevision})`);
-    startRemotePolling();
     if(d.payload&&d.payload.slots){
       applyPayload(d.payload);
       updateAutoStatus(d.at||d.payload.at||null);
       return true;
     }
+    updateAutoStatus(null);
+    return false;
   }catch(e){
     remoteMode=false;
-    updateSyncStatus('共有未接続（ローカル保存）');
+    updateSyncStatus('Google Drive未接続');
+    updateDriveStatus(`接続失敗: ${String(e.message||e)}`);
   }
   return false;
 }
@@ -1963,14 +1957,6 @@ function openSaveModal(){
   syncDriveSettingsUi();
   if(remoteMode){
     void pollRemoteState(false);
-  }else{
-    try{
-      const raw=localStorage.getItem(AUTO_SAVE_KEY);
-      if(raw){
-        const d=JSON.parse(raw);
-        updateAutoStatus(d.at||null);
-      }
-    }catch(e){}
   }
   document.getElementById('svOv').classList.add('open');
 }
@@ -1989,7 +1975,7 @@ function setSvSt(msg, color='var(--success)'){
 }
 
 // 固定ファイル名で保存（上書き運用用）
-const JSON_FIXED_NAME = '金型入替計画_保存データ.json';
+const JSON_FIXED_NAME = DRIVE_DATA_FILENAME;
 let hasUnsavedChanges = false;
 
 function markUnsaved(){
@@ -1998,7 +1984,7 @@ function markUnsaved(){
   if(btn){
     btn.style.borderColor = 'var(--warn)';
     btn.style.color = 'var(--warn)';
-    btn.textContent = '💾 保存 ⚠️ 未保存の変更あり';
+    btn.textContent = '☁ Drive保存 ⚠️ 未保存の変更あり';
   }
 }
 function markSaved(){
@@ -2007,7 +1993,7 @@ function markSaved(){
   if(btn){
     btn.style.borderColor = '';
     btn.style.color = '';
-    btn.textContent = '💾 保存（JSON上書き）';
+    btn.textContent = '☁ Drive保存';
   }
 }
 
@@ -2162,10 +2148,19 @@ function showLockToast(lock){
 }
 
 async function fetchRemoteLock(){
-  const res=await fetch(`${REMOTE_LOCK_URL}?_=${Date.now()}`,{cache:'no-store'});
-  if(!res.ok) throw new Error(`lock_get_${res.status}`);
-  const out=await res.json();
-  return out.lock||null;
+  const out=await driveLoadFile(DRIVE_LOCK_FILENAME, true);
+  const lock=out&&out.payload?out.payload:null;
+  if(!lock||typeof lock!=='object') return null;
+  const ownerId=String(lock.ownerId||'').trim();
+  if(!ownerId) return null;
+  const exp=Date.parse(lock.expiresAt||'');
+  if(!Number.isFinite(exp)||exp<=Date.now()) return null;
+  return {
+    ownerId,
+    ownerName:lock.ownerName||getOwnerLabel(ownerId),
+    expiresAt:new Date(exp).toISOString(),
+    updatedAt:lock.updatedAt||null
+  };
 }
 
 function clearLockHeartbeat(){
@@ -2185,56 +2180,69 @@ function startLockPolling(){
   lockPollTimer=setInterval(()=>{ void checkEditing(); }, REMOTE_LOCK_POLL_MS);
 }
 
+function makeLockPayload(ownerId){
+  const now=Date.now();
+  if(!ownerId){
+    return {
+      ownerId:'',
+      ownerName:'',
+      updatedAt:new Date(now).toISOString(),
+      expiresAt:new Date(now-1000).toISOString()
+    };
+  }
+  return {
+    ownerId,
+    ownerName:getOwnerLabel(ownerId),
+    updatedAt:new Date(now).toISOString(),
+    expiresAt:new Date(now+REMOTE_LOCK_TTL_MS).toISOString()
+  };
+}
+
 async function acquireEditingLock(showToast){
   if(!remoteMode){
-    localStorage.setItem('editLock', sessionId);
-    editing=true;
-    void checkEditing();
-    if(showToast) toast('🔓 編集モードになりました','ok');
-    return true;
+    if(showToast) toast('Drive未接続のため編集できません','warn');
+    return false;
   }
   try{
-    const res=await fetch(REMOTE_LOCK_URL,{
-      method:'PUT',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        ownerId:sessionId,
-        ownerName:getOwnerLabel(sessionId),
-        ttlMs:REMOTE_LOCK_TTL_MS
-      })
-    });
-    const out=await res.json();
-    if(res.status===409){
-      applyEditUi(out.lock||null);
-      showLockToast(out.lock||null);
+    const current=await fetchRemoteLock();
+    if(current&&current.ownerId!==sessionId){
+      applyEditUi(current);
+      showLockToast(current);
       if(showToast) toast('他の端末が編集中です。読み取り専用です。','warn');
       return false;
     }
-    if(!res.ok) throw new Error(`lock_put_${res.status}`);
-    applyEditUi(out.lock||null);
+    await driveSaveFile(DRIVE_LOCK_FILENAME, makeLockPayload(sessionId));
+    const verified=await fetchRemoteLock();
+    if(!verified||verified.ownerId!==sessionId){
+      applyEditUi(verified||null);
+      if(verified) showLockToast(verified);
+      if(showToast) toast('他の端末が編集中です。読み取り専用です。','warn');
+      return false;
+    }
+    applyEditUi(verified);
     if(showToast) toast('🔓 編集モードになりました','ok');
     return true;
   }catch(err){
+    updateSyncStatus('ロック取得エラー');
     if(showToast) toast('編集ロックに接続できませんでした','err');
     return false;
   }
 }
 
 async function releaseEditingLock(showToast){
+  clearLockHeartbeat();
   if(!remoteMode){
-    if(localStorage.getItem('editLock')===sessionId){
-      localStorage.removeItem('editLock');
-      editing=false;
-      void checkEditing();
-      if(showToast) toast('✅ 編集を終了しました','info');
-    }
+    editing=false;
+    applyEditUi(null);
     return;
   }
-  clearLockHeartbeat();
   try{
-    const res=await fetch(`${REMOTE_LOCK_URL}?ownerId=${encodeURIComponent(sessionId)}`,{method:'DELETE'});
-    const out=await res.json();
-    applyEditUi(out.lock||null);
+    const current=await fetchRemoteLock();
+    if(!current||current.ownerId===sessionId){
+      await driveSaveFile(DRIVE_LOCK_FILENAME, makeLockPayload(''));
+    }
+    editing=false;
+    applyEditUi(null);
     if(showToast) toast('✅ 編集を終了しました','info');
   }catch(err){
     editing=false;
@@ -2245,18 +2253,7 @@ async function releaseEditingLock(showToast){
 
 // 編集ロック状態を確認し、ボタンやモードを切り替える
 async function checkEditing(){
-  if(!remoteMode){
-    const lock=localStorage.getItem('editLock');
-    if(!lock){
-      applyEditUi(null);
-      await tryAutoAcquireEditing();
-    }else if(lock===sessionId){
-      applyEditUi({ownerId:sessionId,ownerName:getOwnerLabel(sessionId)});
-    }else{
-      applyEditUi({ownerId:lock,ownerName:getOwnerLabel(lock)});
-    }
-    return;
-  }
+  if(!remoteMode){ applyEditUi(null); return; }
   try{
     const lock=await fetchRemoteLock();
     applyEditUi(lock);
@@ -2282,28 +2279,19 @@ async function endEditing(){
 }
 
 function releaseLockOnLeave(){
-  if(!editing) return;
-  if(!remoteMode){
-    try{
-      if(localStorage.getItem('editLock')===sessionId){
-        localStorage.removeItem('editLock');
-      }
-    }catch(err){}
-    return;
-  }
-  const url=`/api/lock/release?ownerId=${encodeURIComponent(sessionId)}`;
+  if(!editing||!driveEndpoint) return;
+  const body=JSON.stringify({
+    action:'save',
+    filename:DRIVE_LOCK_FILENAME,
+    payload:makeLockPayload('')
+  });
   try{
-    if(navigator.sendBeacon){
-      const blob=new Blob(['{}'],{type:'application/json'});
-      navigator.sendBeacon(url, blob);
-    }else{
-      fetch(url,{
-        method:'POST',
-        keepalive:true,
-        headers:{'Content-Type':'application/json'},
-        body:'{}'
-      });
-    }
+    fetch(driveEndpoint,{
+      method:'POST',
+      keepalive:true,
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body
+    });
   }catch(err){}
 }
 
@@ -2332,15 +2320,17 @@ function toggleSidebar(){
   }
 }
 
-// 他タブで編集状況が変わったときに更新する
+// Drive設定が変わったときはUIを更新
 window.addEventListener('storage', e=>{
-  if(e.key==='editLock') void checkEditing();
-  if(e.key===AUTO_SAVE_KEY&&e.newValue){
-    try{
-      const d=JSON.parse(e.newValue);
-      updateAutoStatus(d.at||null);
-      if(!remoteMode) updateSyncStatus('ローカル保存モード');
-    }catch(err){}
+  if(e.key===DRIVE_ENDPOINT_KEY||e.key===DRIVE_AUTO_SYNC_KEY){
+    loadDriveSettings();
+    syncDriveSettingsUi();
+  }
+});
+window.addEventListener('focus', ()=>{
+  if(remoteMode){
+    void pollRemoteState(false);
+    void checkEditing();
   }
 });
 
@@ -2359,17 +2349,12 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   loadDriveSettings();
   syncDriveSettingsUi();
   skipAutoSave=true;
-  let restored=await initRemoteSync();
-  if(!restored){
-    restored=restoreAutoSave();
-    if(!restored) updateAutoStatus(null);
-  }
+  const restored=await initRemoteSync();
+  if(!restored) updateAutoStatus(null);
   skipAutoSave=false;
   // 初期描画
   renderAll();
-  if(restored){
-    toast(remoteMode?'🌐 共有状態を復元しました':'💾 自動保存データを復元しました','info');
-  }
+  if(restored) toast('🌐 Google Driveの最新状態を復元しました','info');
   // 編集状態確認（定期ポーリング開始）
   startLockPolling();
   await checkEditing();
