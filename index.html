@@ -291,6 +291,13 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 .pv-arr{text-align:center;color:var(--text-dim);font-size:calc(13px * var(--font-scale))}
 /* save modal */
 .sv-modal{width:500px}
+.guide-modal{width:980px}
+.guide-wrap{overflow:auto;max-height:62vh;border:1px solid var(--border);border-radius:6px;margin-bottom:10px}
+.guide-table{width:100%;border-collapse:collapse;min-width:840px;background:var(--steel)}
+.guide-table th,.guide-table td{border:1px solid var(--border);padding:6px 8px}
+.guide-table th{background:var(--steel-mid);text-align:center;font-size:calc(12px * var(--font-scale))}
+.g-in{width:100%;background:transparent;border:none;outline:none;color:var(--text);font-size:calc(11px * var(--font-scale));font-family:'Noto Sans JP',sans-serif}
+.g-in.st{font-weight:700;text-align:center;color:var(--accent)}
 .tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:12px}
 .tab{padding:6px 14px;font-size:calc(10px * var(--font-scale));cursor:pointer;border:none;background:transparent;color:var(--text-dim);
   transition:all .12s;font-family:'Noto Sans JP',sans-serif;border-bottom:2px solid transparent;margin-bottom:-1px}
@@ -386,6 +393,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
     <button class="btn warn" id="editBtn" onclick="startEditing()">✏️ 編集開始</button>
     <button class="btn ok" id="endBtn" onclick="endEditing()" style="display:none;">✔ 編集終了</button>
     <button id="saveJsonBtn" class="btn ok" onclick="expJSON()" style="transition:all .2s">💾 保存（JSON上書き）</button>
+    <button class="btn" onclick="openGuideOv()">📘 ステーション表</button>
     <button class="btn" onclick="openSaveModal()" style="font-size:calc(11px * var(--font-scale))">📂 読込・その他</button>
     <button class="btn primary" onclick="doPrint()">🖨️ 印刷・PDF</button>
     <button class="btn danger" onclick="resetAll()">↺ リセット</button>
@@ -560,6 +568,60 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
   </div>
 </div>
 
+<!-- ステーション表モーダル -->
+<div class="ov" id="guideOv">
+  <div class="modal guide-modal">
+    <h3>📘 ステーション表（参照・編集）</h3>
+    <p>画像の内容をこの画面で管理できます。編集後は保存してください。</p>
+    <div class="guide-wrap">
+      <table class="guide-table">
+        <thead>
+          <tr><th>ステーション</th><th>サイズ</th><th>呼称</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><input class="g-in st" id="gs-A-st" value="A" readonly></td>
+            <td><input class="g-in" id="gs-A-size"></td>
+            <td><input class="g-in" id="gs-A-label"></td>
+          </tr>
+          <tr>
+            <td><input class="g-in st" id="gs-B-st" value="B" readonly></td>
+            <td><input class="g-in" id="gs-B-size"></td>
+            <td><input class="g-in" id="gs-B-label"></td>
+          </tr>
+          <tr>
+            <td><input class="g-in st" id="gs-C-st" value="C" readonly></td>
+            <td><input class="g-in" id="gs-C-size"></td>
+            <td><input class="g-in" id="gs-C-label"></td>
+          </tr>
+          <tr>
+            <td><input class="g-in st" id="gs-D-st" value="D" readonly></td>
+            <td><input class="g-in" id="gs-D-size"></td>
+            <td><input class="g-in" id="gs-D-label"></td>
+          </tr>
+          <tr>
+            <td><input class="g-in st" id="gs-E-st" value="E" readonly></td>
+            <td><input class="g-in" id="gs-E-size"></td>
+            <td><input class="g-in" id="gs-E-label"></td>
+          </tr>
+          <tr>
+            <td><input class="g-in st" id="gs-G-st" value="G" readonly></td>
+            <td><input class="g-in" id="gs-G-size"></td>
+            <td><input class="g-in" id="gs-G-label"></td>
+          </tr>
+          <tr><td><input class="g-in st" id="gstat-1-title" value="使用可能ステーション"></td><td colspan="2"><input class="g-in" id="gstat-1-value"></td></tr>
+          <tr><td><input class="g-in st" id="gstat-2-title" value="現状使用ステーション"></td><td colspan="2"><input class="g-in" id="gstat-2-value"></td></tr>
+          <tr><td><input class="g-in st" id="gstat-3-title" value="新マシーン使用ステーション"></td><td colspan="2"><input class="g-in" id="gstat-3-value"></td></tr>
+          <tr><td><input class="g-in st" id="gstat-4-title" value="追加金型"></td><td colspan="2"><input class="g-in" id="gstat-4-value"></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <button class="btn primary" style="width:100%;margin-bottom:7px;padding:9px;font-size:calc(12px * var(--font-scale));justify-content:center"
+            onclick="saveGuide()">✅ 表を保存</button>
+    <button class="m-close" onclick="closeOv('guideOv')">閉じる</button>
+  </div>
+</div>
+
 <!-- 保存・共有モーダル -->
 <div class="ov" id="svOv">
   <div class="modal sv-modal">
@@ -664,6 +726,22 @@ const ST={
   E:{name:'Eステーション',range:'89～114.3Φ',color:'#cc77ff'},
   G:{name:'Gステーション(インデックス)',range:'12.8～31.7Φ',color:'#ff77aa'},
 };
+const DEFAULT_STATION_GUIDE={
+  rows:{
+    A:{size:'1.6～12.7Φ',label:'1/2′(ハーフ)'},
+    B:{size:'12.8～31.7Φ',label:'1 1/4′(インチクォーター)'},
+    C:{size:'31.8～50.8Φ',label:'2′(2インチ)'},
+    D:{size:'50.9～88.9Φ',label:'3 1/2′(3ハン)'},
+    E:{size:'89～114.3Φ',label:'4 1/2′(4ハン)'},
+    G:{size:'12.8～31.7Φ',label:'1 1/4′(オートインデックス)'}
+  },
+  stats:[
+    {title:'使用可能ステーション',value:'A=30  B=12  C=4  D=2  E=2  G=2'},
+    {title:'現状使用ステーション',value:'A=27  B=12  C=4  D=1  E=2  G=2'},
+    {title:'新マシーン使用ステーション',value:'A=36  B=12  C=4  D=2  E=2  G=2'},
+    {title:'追加金型',value:'A=9  B=0  C=0  D=1  E=0  G=0'}
+  ]
+};
 const ICONS={'丸':'⬤','角':'■','長角':'▬','長丸':'⬭','バーリング':'🔩','サラ':'⊘','刻印':'✦','ポンチ':'◉','特型':'★','その他':'◈','高速マーキング':'⚡','―':'○'};
 const ic=s=>ICONS[s]||'◈';
 
@@ -764,6 +842,7 @@ let myName=SHARED_NAME, myColor=SHARED_COLOR;
 let turretViewMode='replacement';
 let turretShapeFilter='all';
 let turretSearchText='';
+let stationGuide=JSON.parse(JSON.stringify(DEFAULT_STATION_GUIDE));
 
 function normalizeSlotMeta(s){
   if(s.purpose===undefined||s.purpose===null) s.purpose='';
@@ -779,6 +858,8 @@ function initSlots(){
   slots=JSON.parse(JSON.stringify(INIT));
   cands=JSON.parse(JSON.stringify(BASE_CANDS));
   used=new Set(); cidCnt=1000;
+  stationGuide=JSON.parse(JSON.stringify(DEFAULT_STATION_GUIDE));
+  applyGuideToStations();
   normalizeSlots(slots);
 }
 initSlots();
@@ -1120,6 +1201,79 @@ function resetAll(){
 // ================================================================
 // MODALS
 // ================================================================
+function normalizeGuide(src){
+  const out=JSON.parse(JSON.stringify(DEFAULT_STATION_GUIDE));
+  if(!src||typeof src!=='object') return out;
+  if(src.rows&&typeof src.rows==='object'){
+    ['A','B','C','D','E','G'].forEach(k=>{
+      if(src.rows[k]&&typeof src.rows[k]==='object'){
+        if(typeof src.rows[k].size==='string') out.rows[k].size=src.rows[k].size;
+        if(typeof src.rows[k].label==='string') out.rows[k].label=src.rows[k].label;
+      }
+    });
+  }
+  if(Array.isArray(src.stats)){
+    for(let i=0;i<4;i++){
+      const row=src.stats[i];
+      if(row&&typeof row==='object'){
+        if(typeof row.title==='string') out.stats[i].title=row.title;
+        if(typeof row.value==='string') out.stats[i].value=row.value;
+      }
+    }
+  }
+  return out;
+}
+
+function applyGuideToStations(){
+  ['A','B','C','D','E','G'].forEach(k=>{
+    if(stationGuide&&stationGuide.rows&&stationGuide.rows[k]&&ST[k]){
+      ST[k].range=stationGuide.rows[k].size||ST[k].range;
+    }
+  });
+}
+
+function openGuideOv(){
+  stationGuide=normalizeGuide(stationGuide);
+  ['A','B','C','D','E','G'].forEach(k=>{
+    const s=stationGuide.rows[k]||{};
+    const sizeEl=document.getElementById(`gs-${k}-size`);
+    const labelEl=document.getElementById(`gs-${k}-label`);
+    if(sizeEl) sizeEl.value=s.size||'';
+    if(labelEl) labelEl.value=s.label||'';
+  });
+  for(let i=1;i<=4;i++){
+    const row=stationGuide.stats[i-1]||{title:'',value:''};
+    const titleEl=document.getElementById(`gstat-${i}-title`);
+    const valueEl=document.getElementById(`gstat-${i}-value`);
+    if(titleEl) titleEl.value=row.title||'';
+    if(valueEl) valueEl.value=row.value||'';
+  }
+  document.getElementById('guideOv').classList.add('open');
+}
+
+function saveGuide(){
+  if(!editing){ toast('現在他のユーザーが編集中です。読み取り専用です','warn'); return; }
+  const next=normalizeGuide(stationGuide);
+  ['A','B','C','D','E','G'].forEach(k=>{
+    const sizeEl=document.getElementById(`gs-${k}-size`);
+    const labelEl=document.getElementById(`gs-${k}-label`);
+    next.rows[k].size=sizeEl?sizeEl.value.trim():next.rows[k].size;
+    next.rows[k].label=labelEl?labelEl.value.trim():next.rows[k].label;
+  });
+  for(let i=1;i<=4;i++){
+    const titleEl=document.getElementById(`gstat-${i}-title`);
+    const valueEl=document.getElementById(`gstat-${i}-value`);
+    next.stats[i-1].title=titleEl?titleEl.value.trim():next.stats[i-1].title;
+    next.stats[i-1].value=valueEl?valueEl.value.trim():next.stats[i-1].value;
+  }
+  stationGuide=next;
+  applyGuideToStations();
+  renderTurret();
+  queueAutoSave();
+  closeOv('guideOv');
+  toast('✅ ステーション表を保存しました','ok');
+}
+
 function openBaseOv(e,idx){
   if(e) e.stopPropagation();
   actIdx=idx;
@@ -1323,10 +1477,10 @@ document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{ if(e
 // ================================================================
 function buildStateObject(){
   return {
-    slots, cands, used:[...used], cidCnt,
+    slots, cands, used:[...used], cidCnt, stationGuide,
     at: new Date().toISOString(),
     savedBy: SHARED_NAME,
-    version: 5
+    version: 6
   };
 }
 
@@ -1341,6 +1495,8 @@ function applyPayload(d){
   cands=d.cands||JSON.parse(JSON.stringify(BASE_CANDS));
   used=new Set(d.used||[]);
   cidCnt=d.cidCnt||1000;
+  stationGuide=normalizeGuide(d.stationGuide);
+  applyGuideToStations();
 }
 
 function updateAutoStatus(at){
