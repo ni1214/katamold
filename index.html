@@ -183,6 +183,10 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 .s-sh{font-size:calc(14px * var(--font-scale));font-weight:700;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .s-sz{font-family:'Share Tech Mono',monospace;font-size:calc(13px * var(--font-scale));color:var(--text-dim);text-align:center;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .s-dt{font-size:calc(11px * var(--font-scale));color:var(--text-dim);text-align:center;margin-top:2px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s-policy{font-size:calc(10px * var(--font-scale));text-align:center;margin-top:2px;font-weight:700;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s-policy.lock{color:var(--danger)}
+.s-policy.change{color:var(--accent2)}
+.s-policy.check{color:var(--warn)}
 .s-no{position:absolute;bottom:5px;left:5px;font-family:'Share Tech Mono',monospace;font-size:calc(11px * var(--font-scale));color:var(--accent);opacity:.75}
 /* 担当バッジ */
 .s-editor{position:absolute;top:0;left:0;right:0;font-size:calc(11px * var(--font-scale));font-weight:700;text-align:center;
@@ -287,6 +291,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
   cursor:pointer;transition:all .12s;display:flex;align-items:center;gap:8px}
 .mop:hover{border-color:var(--accent);background:var(--card-hover)}
 .mop.used{opacity:.3;pointer-events:none}
+.mop.locked{opacity:.4;pointer-events:none;border-color:var(--danger)}
 .mop .mi{font-size:calc(16px * var(--font-scale))}
 .mop .mn{font-size:calc(11px * var(--font-scale));font-weight:500}
 .mop .mm{font-size:calc(11px * var(--font-scale));color:var(--text-dim);font-family:'Share Tech Mono',monospace}
@@ -606,6 +611,13 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
       <input type="text" id="bm-dt" placeholder="例: CL=0.30, 空き"></div>
     <div class="fg"><label>用途</label>
       <input type="text" id="bm-purpose" placeholder="例: M4タップ下穴"></div>
+    <div class="fg"><label>運用ステータス</label>
+      <select id="bm-status">
+        <option value="lock">ロック（継続使用）</option>
+        <option value="change">要変更（使わない）</option>
+        <option value="check">要確認（不明）</option>
+      </select>
+    </div>
     <button class="btn primary" style="width:100%;margin-bottom:7px;padding:9px;font-size:calc(12px * var(--font-scale));justify-content:center"
             onclick="saveBaseSlot()">✅ デフォルトを保存</button>
     <button class="m-close" onclick="closeOv('baseOv')">キャンセル</button>
@@ -925,6 +937,7 @@ function normalizeSlotMeta(s){
   if(s.purpose===undefined||s.purpose===null) s.purpose='';
   if('nPurpose' in s && s.nPurpose===null) s.nPurpose='';
   if('oPurpose' in s && s.oPurpose===null) s.oPurpose='';
+  if(!['lock','change','check'].includes(s.baseStatus)) s.baseStatus='check';
 }
 
 function normalizeSlots(arr){
@@ -1127,6 +1140,28 @@ function slotStat(s){
   return 'keep';
 }
 
+function getBaseStatus(s){
+  const st=s&&typeof s.baseStatus==='string'?s.baseStatus:'check';
+  return ['lock','change','check'].includes(st)?st:'check';
+}
+
+function getBaseStatusLabel(status){
+  if(status==='lock') return 'ロック';
+  if(status==='change') return '要変更';
+  return '要確認';
+}
+
+function isSlotLocked(s){
+  return getBaseStatus(s)==='lock';
+}
+
+function guardSlotReplace(s){
+  if(!s) return false;
+  if(!isSlotLocked(s)) return true;
+  toast(`スロット${s.num} は「ロック」設定のため入替できません`,'warn');
+  return false;
+}
+
 function slotDisplay(s){
   if(turretViewMode==='default'){
     return {
@@ -1252,6 +1287,8 @@ function renderTurret(){
       const dv=slotDisplay(s);
       const dsh=dv.shape, dsz=dv.size, ddt=dv.detail;
       const idx=slots.indexOf(s);
+      const baseStatus=getBaseStatus(s);
+      const baseStatusLabel=getBaseStatusLabel(baseStatus);
       const el=document.createElement('div');
       el.className=`slot ${st2}`;
       // 担当バッジ（固定の共有名は画面に出さない）
@@ -1265,6 +1302,7 @@ function renderTurret(){
         <div class="s-ico">${ic(dsh)}</div>
         <div class="s-sh">${dsh==='―'?'空きスロット':dsh}</div>
         <div class="s-sz">${dsz}</div>
+        <div class="s-policy ${baseStatus}">${baseStatusLabel}</div>
         ${ddt&&ddt!=='―'?`<div class="s-dt">${ddt}</div>`:''}
         ${purp?`<div class="s-purpose">用途: ${escHtml(purp)}</div>`:''}
         <div class="s-no">No.${s.no||'―'} / Sl.${s.num}</div>
@@ -1398,6 +1436,7 @@ function applyC(idx, cid, note='', purpose=undefined){
   if(!editing){ toast('現在他のユーザーが編集中です。読み取り専用です','warn'); return; }
   const c=cands.find(x=>x.id===cid); if(!c) return;
   const s=slots[idx];
+  if(!guardSlotReplace(s)) return;
   if(s.prevCid) used.delete(s.prevCid);
   if(!s.oShape){s.oShape=s.shape;s.oSize=s.size;s.oDetail=s.detail;}
   s.nShape=c.shape; s.nSize=c.size; s.nDetail=c.detail;
@@ -1420,6 +1459,7 @@ function applyFree(idx,sh,sz,dt,note,purpose=undefined){
   // 編集モードでなければ変更できません
   if(!editing){ toast('現在他のユーザーが編集中です。読み取り専用です','warn'); return; }
   const s=slots[idx];
+  if(!guardSlotReplace(s)) return;
   if(s.prevCid) used.delete(s.prevCid);
   if(!s.oShape){s.oShape=s.shape;s.oSize=s.size;s.oDetail=s.detail;}
   s.nShape=sh; s.nSize=sz; s.nDetail=dt||'';
@@ -1543,6 +1583,7 @@ function openBaseOv(e,idx){
   const szEl=document.getElementById('bm-sz');
   const dtEl=document.getElementById('bm-dt');
   const pEl=document.getElementById('bm-purpose');
+  const stEl=document.getElementById('bm-status');
   const subEl=document.getElementById('bm-sub');
   if(subEl) subEl.textContent=`${ST[s.st].name} スロット${s.num} のデフォルト情報`;
   if(noEl) noEl.value=(s.no===undefined||s.no===null)?'':String(s.no);
@@ -1550,6 +1591,7 @@ function openBaseOv(e,idx){
   if(szEl) szEl.value=(s.size&&s.size!=='―')?s.size:'';
   if(dtEl) dtEl.value=(s.detail&&s.detail!=='―'&&s.detail!=='空き')?s.detail:'';
   if(pEl) pEl.value=s.purpose||'';
+  if(stEl) stEl.value=getBaseStatus(s);
   document.getElementById('baseOv').classList.add('open');
 }
 
@@ -1562,6 +1604,7 @@ function saveBaseSlot(){
   const sizeInput=document.getElementById('bm-sz').value.trim();
   const detailInput=document.getElementById('bm-dt').value.trim();
   const purpose=document.getElementById('bm-purpose').value.trim();
+  const baseStatus=document.getElementById('bm-status').value;
   const noInput=document.getElementById('bm-no').value.trim();
   if(sh!=='―'&&!sizeInput){ toast('サイズを入力してください','warn'); return; }
 
@@ -1579,6 +1622,7 @@ function saveBaseSlot(){
   s.size=nextSize;
   s.detail=nextDetail;
   s.purpose=purpose;
+  s.baseStatus=['lock','change','check'].includes(baseStatus)?baseStatus:'check';
   // 入替データがある場合は、復元先（元データ）を今回のデフォルト値に更新
   if(s.nShape){
     s.oShape=sh;
@@ -1597,7 +1641,10 @@ function saveBaseSlot(){
 function openSlotOv(e,idx){
   if(e) e.stopPropagation();
   actIdx=idx;
-  const s=slots[idx], dsh=s.nShape||s.shape, dsz=s.nSize||s.size;
+  const s=slots[idx];
+  if(!s) return;
+  if(!guardSlotReplace(s)) return;
+  const dsh=s.nShape||s.shape, dsz=s.nSize||s.size;
   document.getElementById('sm-sub').textContent=`${ST[s.st].name} スロット${s.num} — 現在: ${dsh} ${dsz}`;
   const ml=document.getElementById('sm-list'); ml.innerHTML='';
   // Set default purpose input
@@ -1638,12 +1685,13 @@ function openCandModal(cid){
   document.getElementById('sm-sub').textContent=`「${c.shape} ${c.size}」を設置するスロットを選択`;
   const ml=document.getElementById('sm-list'); ml.innerHTML='';
   slots.forEach((s,idx)=>{
-    const d=document.createElement('div'); d.className='mop';
+    const locked=isSlotLocked(s);
+    const d=document.createElement('div'); d.className=`mop ${locked?'locked':''}`;
     d.innerHTML=`<div class="mi">${ic(s.nShape||s.shape)}</div>
       <div style="flex:1"><div class="mn">${ST[s.st].name} スロット${s.num}</div>
-      <div class="mm">現在: ${s.nShape||s.shape} ${s.nSize||s.size} ｜ No.${s.no}</div></div>
+      <div class="mm">現在: ${s.nShape||s.shape} ${s.nSize||s.size} ｜ No.${s.no}${locked?' ｜ ロック中':''}</div></div>
       <div class="cst_">${s.st}</div>`;
-    d.addEventListener('click',()=>{applyC(idx,cid);closeOv('slotOv');});
+    d.addEventListener('click',()=>{if(!locked){applyC(idx,cid);closeOv('slotOv');}});
     ml.appendChild(d);
   });
   document.getElementById('slotOv').classList.add('open');
@@ -1651,6 +1699,8 @@ function openCandModal(cid){
 
 function openCmOv(idx){
   actIdx=idx; const s=slots[idx];
+  if(!s) return;
+  if(!guardSlotReplace(s)) return;
   document.getElementById('cm-sub').textContent=`${ST[s.st].name} スロット${s.num} — 現在: ${s.nShape||s.shape} ${s.nSize||s.size}`;
   document.getElementById('cm-sh').value=s.nShape||s.shape||'丸';
   document.getElementById('cm-sz').value='';
@@ -1739,7 +1789,7 @@ function buildStateObject(){
     slots, cands, used:[...used], cidCnt, stationGuide,
     at: new Date().toISOString(),
     savedBy: SHARED_NAME,
-    version: 6
+    version: 7
   };
 }
 
