@@ -316,15 +316,60 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 .pv-arr{text-align:center;color:var(--text-dim);font-size:calc(13px * var(--font-scale))}
 /* save modal */
 .sv-modal{width:500px}
-.wiz-modal{width:640px;max-width:95vw}
+#wizOv{background:transparent}
+#wizOv.open{display:block}
+.wiz-spotlight{
+  position:fixed;
+  z-index:690;
+  border:2px solid var(--accent);
+  border-radius:10px;
+  box-shadow:0 0 0 9999px rgba(3,10,20,.72),0 0 18px rgba(0,212,255,.35);
+  pointer-events:none;
+  transition:all .22s ease;
+}
+.wiz-focus-tag{
+  position:fixed;
+  z-index:691;
+  pointer-events:none;
+  background:rgba(0,212,255,.14);
+  border:1px solid var(--accent);
+  border-radius:999px;
+  color:var(--accent);
+  font-size:calc(10px * var(--font-scale));
+  font-weight:700;
+  padding:4px 10px;
+  white-space:nowrap;
+  box-shadow:0 4px 16px rgba(0,0,0,.35);
+}
+.wiz-modal{
+  position:fixed;
+  top:86px;
+  right:14px;
+  width:min(500px,calc(100vw - 20px));
+  max-width:none;
+  max-height:calc(100vh - 104px);
+  z-index:700;
+  padding:14px;
+}
 .wiz-body{background:var(--steel);border:1px solid var(--border);border-radius:6px;padding:12px;line-height:1.75;
-  font-size:calc(11px * var(--font-scale));color:var(--text);min-height:170px;max-height:48vh;overflow:auto}
+  font-size:calc(11px * var(--font-scale));color:var(--text);min-height:145px;max-height:calc(100vh - 330px);overflow:auto}
 .wiz-body h4{font-size:calc(12px * var(--font-scale));color:var(--accent);margin:0 0 6px}
 .wiz-body p{margin:0 0 8px}
 .wiz-body ul{margin:0 0 6px 18px;padding:0}
 .wiz-body li{margin:0 0 4px}
 .wiz-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px}
 .wiz-step{font-size:calc(10px * var(--font-scale));color:var(--text-dim)}
+@media (max-width:900px){
+  .wiz-modal{
+    top:auto;
+    right:10px;
+    left:10px;
+    bottom:10px;
+    width:auto;
+    max-height:62vh;
+  }
+  .wiz-body{max-height:calc(62vh - 175px)}
+}
 .guide-modal{width:980px}
 .guide-wrap{overflow:auto;max-height:62vh;border:1px solid var(--border);border-radius:6px;margin-bottom:10px}
 .guide-table{width:100%;border-collapse:collapse;min-width:840px;background:var(--steel)}
@@ -418,7 +463,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
     <button class="btn ok" id="endBtn" onclick="endEditing()" style="display:none;">✔ 編集終了（解放）</button>
     <button id="saveJsonBtn" class="btn ok" onclick="driveSaveNow(true)" style="transition:all .2s">☁ Drive保存</button>
     <button class="btn" onclick="openGuideOv()">📘 ステーション表</button>
-    <button class="btn" onclick="openOnboardingWizard(true)">❓ 使い方</button>
+    <button class="btn" id="helpWizardBtn" onclick="openOnboardingWizard(true)">❓ 使い方</button>
     <button class="btn" onclick="openSaveModal()" style="font-size:calc(11px * var(--font-scale))">☁ Drive同期・その他</button>
     <button class="btn primary" onclick="doPrint()">🖨️ 印刷・PDF</button>
     <button class="btn danger" onclick="resetAll()">↺ リセット</button>
@@ -682,6 +727,8 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 
 <!-- 初回説明ウィザード -->
 <div class="ov" id="wizOv">
+  <div class="wiz-spotlight" id="wizSpotlight" style="display:none"></div>
+  <div class="wiz-focus-tag" id="wizFocusTag" style="display:none"></div>
   <div class="modal wiz-modal">
     <h3>🧭 はじめての方向けガイド</h3>
     <p id="wizSub">この画面の基本操作を順に説明します。</p>
@@ -828,43 +875,69 @@ const REMOTE_LOCK_TTL_MS=45000;
 const ONBOARDING_DISMISS_KEY='moldSimulatorOnboardingDismissV1';
 const ONBOARDING_STEPS=[
   {
-    title:'1. 画面の基本',
+    title:'1. ヘッダー',
+    selector:'.h-title',
+    focus:'ここで機械名と画面名を確認',
+    pad:10,
     body:`<h4>画面の見方</h4>
       <ul>
-        <li>中央がタレット配置図、左が候補リストです。</li>
-        <li>上部の「入替表示 / デフォルト表示」で表示内容を切替できます。</li>
+        <li>上部に主要操作（保存・印刷・ガイド）が並びます。</li>
+        <li>最初に対象の機械名と画面名を確認してください。</li>
       </ul>`
   },
   {
-    title:'2. 絞り込み',
-    body:`<h4>素早く探す</h4>
+    title:'2. 表示切替',
+    selector:'#viewSwitch',
+    focus:'入替表示 / デフォルト表示 を切替',
+    pad:8,
+    body:`<h4>表示モード</h4>
       <ul>
-        <li>形状フィルター、ステーションフィルター、検索を同時に使えます。</li>
-        <li>条件に合うスロットだけが中央に表示されます。</li>
+        <li>「入替表示」は変更点の確認に向いています。</li>
+        <li>「デフォルト表示」は基準構成の確認や編集に使います。</li>
       </ul>`
   },
   {
-    title:'3. 候補追加と入替',
-    body:`<h4>候補を作ってから選択</h4>
+    title:'3. フィルターと検索',
+    selector:'.turret-tools',
+    focus:'形状 / ステーション / 検索を同時利用',
+    pad:10,
+    body:`<h4>目的の金型を絞る</h4>
       <ul>
-        <li>候補は「任意サイズを追加」で作成します（固定候補はありません）。</li>
-        <li>スロットを開き、候補リストから選んで入替します。</li>
+        <li>形状フィルターとステーションフィルターで対象を絞れます。</li>
+        <li>検索欄では No / 形状 / サイズ / 詳細 を横断検索できます。</li>
       </ul>`
   },
   {
-    title:'4. 運用ステータス',
-    body:`<h4>ロック / 要変更 / 要確認</h4>
+    title:'4. タレットスロット',
+    selector:'#turret .slot:not(.empty)',
+    focus:'スロットをクリックして入替・編集',
+    pad:8,
+    body:`<h4>金型の編集ポイント</h4>
       <ul>
-        <li>デフォルト編集で各スロットの運用ステータスを設定できます。</li>
-        <li>ロックは入替不可、要変更/要確認は入替可能です。</li>
+        <li>スロットを開くと入替・用途編集・デフォルト編集ができます。</li>
+        <li>ロックステータスのスロットは入替できません。</li>
       </ul>`
   },
   {
-    title:'5. 共有と保存',
+    title:'5. 保存と共有',
+    selector:'#saveJsonBtn',
+    focus:'右上の Drive保存 で即時保存',
+    pad:8,
     body:`<h4>Google Drive同期</h4>
       <ul>
-        <li>保存・読込・編集ロックは Google Drive で共有されます。</li>
+        <li>保存・読込・編集ロックは Google Drive で統一管理されます。</li>
         <li>右上の「Drive保存」で即時保存、通常は自動同期です。</li>
+      </ul>`
+  },
+  {
+    title:'6. ガイド再表示',
+    selector:'#helpWizardBtn',
+    focus:'このボタンでいつでも再表示',
+    pad:8,
+    body:`<h4>次回以降の表示設定</h4>
+      <ul>
+        <li>最後の「次回から表示しない」をオンにすると初回自動表示を止められます。</li>
+        <li>あとで見直したいときは「❓ 使い方」ボタンから再表示できます。</li>
       </ul>`
   }
 ];
@@ -988,6 +1061,8 @@ let lockToastKey='';
 let autoAcquirePausedUntil=0;
 let autoAcquireInFlight=false;
 let onboardingStep=0;
+let onboardingHighlightTimer=null;
+let onboardingTrackingBound=false;
 // 共有編集ロック用セッションIDと編集モードフラグ
 let sessionId = Math.random().toString(36).substr(2, 9);
 let editing = false;
@@ -1892,6 +1967,92 @@ function setOnboardingDismissed(v){
   }catch(e){}
 }
 
+function findOnboardingTarget(step){
+  if(!step||!step.selector) return null;
+  try{
+    return document.querySelector(step.selector);
+  }catch(e){
+    return null;
+  }
+}
+
+function clearOnboardingHighlight(){
+  const spot=document.getElementById('wizSpotlight');
+  const tag=document.getElementById('wizFocusTag');
+  if(spot) spot.style.display='none';
+  if(tag) tag.style.display='none';
+}
+
+function placeOnboardingHighlight(step,target){
+  const spot=document.getElementById('wizSpotlight');
+  const tag=document.getElementById('wizFocusTag');
+  if(!spot||!tag||!target){ clearOnboardingHighlight(); return; }
+  const r=target.getBoundingClientRect();
+  if(r.width<2||r.height<2){ clearOnboardingHighlight(); return; }
+  const pad=Math.max(4,Number(step&&step.pad)||8);
+  const left=Math.max(6,Math.round(r.left-pad));
+  const top=Math.max(6,Math.round(r.top-pad));
+  const width=Math.max(20,Math.min(window.innerWidth-left-6,Math.round(r.width+pad*2)));
+  const height=Math.max(20,Math.min(window.innerHeight-top-6,Math.round(r.height+pad*2)));
+  spot.style.left=`${left}px`;
+  spot.style.top=`${top}px`;
+  spot.style.width=`${width}px`;
+  spot.style.height=`${height}px`;
+  spot.style.display='block';
+
+  tag.textContent=(step&&step.focus)||'この場所を確認してください';
+  tag.style.display='block';
+  const tagW=tag.offsetWidth||200;
+  const tagH=tag.offsetHeight||26;
+  let tagLeft=Math.max(8,Math.min(left,window.innerWidth-tagW-8));
+  let tagTop=top+height+8;
+  if(tagTop+tagH>window.innerHeight-8) tagTop=Math.max(8,top-tagH-8);
+  tag.style.left=`${tagLeft}px`;
+  tag.style.top=`${tagTop}px`;
+}
+
+function refreshOnboardingHighlight(allowScroll=false){
+  const ov=document.getElementById('wizOv');
+  if(!ov||!ov.classList.contains('open')) return;
+  const step=ONBOARDING_STEPS[onboardingStep]||ONBOARDING_STEPS[0];
+  const target=findOnboardingTarget(step);
+  if(!target){ clearOnboardingHighlight(); return; }
+  if(allowScroll){
+    try{
+      target.scrollIntoView({behavior:'smooth',block:'center',inline:'nearest'});
+    }catch(e){}
+  }
+  if(onboardingHighlightTimer){
+    clearTimeout(onboardingHighlightTimer);
+    onboardingHighlightTimer=null;
+  }
+  placeOnboardingHighlight(step,target);
+  if(allowScroll){
+    onboardingHighlightTimer=setTimeout(()=>{
+      const t=findOnboardingTarget(step);
+      placeOnboardingHighlight(step,t);
+    },220);
+  }
+}
+
+function handleOnboardingViewportChange(){
+  refreshOnboardingHighlight(false);
+}
+
+function bindOnboardingHighlightTracking(){
+  if(onboardingTrackingBound) return;
+  window.addEventListener('resize',handleOnboardingViewportChange);
+  document.addEventListener('scroll',handleOnboardingViewportChange,true);
+  onboardingTrackingBound=true;
+}
+
+function unbindOnboardingHighlightTracking(){
+  if(!onboardingTrackingBound) return;
+  window.removeEventListener('resize',handleOnboardingViewportChange);
+  document.removeEventListener('scroll',handleOnboardingViewportChange,true);
+  onboardingTrackingBound=false;
+}
+
 function renderOnboardingStep(){
   const step=ONBOARDING_STEPS[onboardingStep]||ONBOARDING_STEPS[0];
   const bodyEl=document.getElementById('wizBody');
@@ -1909,6 +2070,7 @@ function renderOnboardingStep(){
   if(nextBtn) nextBtn.textContent=isLast?'完了':'次へ ▶';
   if(prefWrap) prefWrap.style.display=isLast?'block':'none';
   if(dontShow && isLast) dontShow.checked=isOnboardingDismissed();
+  refreshOnboardingHighlight(true);
 }
 
 function applyOnboardingPreferenceFromUi(){
@@ -1920,14 +2082,22 @@ function applyOnboardingPreferenceFromUi(){
 
 function openOnboardingWizard(force=false){
   if(!force && isOnboardingDismissed()) return;
-  onboardingStep=0;
-  renderOnboardingStep();
   const ov=document.getElementById('wizOv');
-  if(ov) ov.classList.add('open');
+  if(!ov) return;
+  onboardingStep=0;
+  ov.classList.add('open');
+  bindOnboardingHighlightTracking();
+  renderOnboardingStep();
 }
 
 function closeOnboardingWizard(){
   applyOnboardingPreferenceFromUi();
+  if(onboardingHighlightTimer){
+    clearTimeout(onboardingHighlightTimer);
+    onboardingHighlightTimer=null;
+  }
+  clearOnboardingHighlight();
+  unbindOnboardingHighlightTracking();
   closeOv('wizOv');
 }
 
