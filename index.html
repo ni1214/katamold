@@ -390,8 +390,8 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
       <span id="myName">共有モード</span>
     </div>
     <!-- 編集モードの切替ボタン -->
-    <button class="btn warn" id="editBtn" onclick="startEditing()">✏️ 編集開始</button>
-    <button class="btn ok" id="endBtn" onclick="endEditing()" style="display:none;">✔ 編集終了</button>
+    <button class="btn warn" id="editBtn" onclick="startEditing()" style="display:none;">✏️ 編集開始</button>
+    <button class="btn ok" id="endBtn" onclick="endEditing()" style="display:none;">✔ 編集終了（解放）</button>
     <button id="saveJsonBtn" class="btn ok" onclick="expJSON()" style="transition:all .2s">💾 保存（JSON上書き）</button>
     <button class="btn" onclick="openGuideOv()">📘 ステーション表</button>
     <button class="btn" onclick="openSaveModal()" style="font-size:calc(11px * var(--font-scale))">📂 読込・その他</button>
@@ -862,6 +862,8 @@ let pendingRemoteSave=false;
 let lockPollTimer=null;
 let lockHeartbeatTimer=null;
 let lockToastKey='';
+let autoAcquirePausedUntil=0;
+let autoAcquireInFlight=false;
 // 共有編集ロック用セッションIDと編集モードフラグ
 let sessionId = Math.random().toString(36).substr(2, 9);
 let editing = false;
@@ -1959,12 +1961,29 @@ function setReadonlyNotice(lock){
   }
 }
 
+function canAutoAcquireEditing(){
+  return Date.now()>=autoAcquirePausedUntil;
+}
+
+async function tryAutoAcquireEditing(){
+  if(autoAcquireInFlight) return false;
+  if(!canAutoAcquireEditing()) return false;
+  autoAcquireInFlight=true;
+  try{
+    const ok=await acquireEditingLock(false);
+    if(ok&&remoteMode) startLockHeartbeat();
+    return ok;
+  }finally{
+    autoAcquireInFlight=false;
+  }
+}
+
 function applyEditUi(lock){
   const eb=document.getElementById('editBtn');
   const endb=document.getElementById('endBtn');
   if(!lock){
     editing=false;
-    if(eb) eb.style.display='';
+    if(eb) eb.style.display='none';
     if(endb) endb.style.display='none';
     setReadonlyNotice(null);
     return;
@@ -2079,6 +2098,7 @@ async function checkEditing(){
     const lock=localStorage.getItem('editLock');
     if(!lock){
       applyEditUi(null);
+      await tryAutoAcquireEditing();
     }else if(lock===sessionId){
       applyEditUi({ownerId:sessionId,ownerName:getOwnerLabel(sessionId)});
     }else{
@@ -2089,7 +2109,11 @@ async function checkEditing(){
   try{
     const lock=await fetchRemoteLock();
     applyEditUi(lock);
-    showLockToast(lock);
+    if(!lock||!lock.ownerId){
+      await tryAutoAcquireEditing();
+    }else{
+      showLockToast(lock);
+    }
   }catch(err){
     applyEditUi(null);
   }
@@ -2101,6 +2125,8 @@ async function startEditing(){
 }
 
 async function endEditing(){
+  // 明示的に終了した直後は、一定時間だけ自動再取得を止める
+  autoAcquirePausedUntil=Date.now()+30000;
   await releaseEditingLock(true);
 }
 
