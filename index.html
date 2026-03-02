@@ -364,7 +364,8 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
     <!-- 編集モードの切替ボタン -->
     <button class="btn warn" id="editBtn" onclick="startEditing()">✏️ 編集開始</button>
     <button class="btn ok" id="endBtn" onclick="endEditing()" style="display:none;">✔ 編集終了</button>
-    <button class="btn ok" onclick="openSaveModal()">💾 自動保存</button>
+    <button id="saveJsonBtn" class="btn ok" onclick="expJSON()" style="transition:all .2s">💾 保存（JSON上書き）</button>
+    <button class="btn" onclick="openSaveModal()" style="font-size:11px">📂 読込・その他</button>
     <button class="btn primary" onclick="doPrint()">🖨️ 印刷・PDF</button>
     <button class="btn danger" onclick="resetAll()">↺ リセット</button>
   </div>
@@ -535,12 +536,20 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
     <!-- バックアップタブ -->
     <div class="tc" id="tc-backup">
       <div class="info-box">
-        <strong>任意タイミングでJSONバックアップ</strong>を出力します。<br>
-        読み込み機能は使わず、復旧時はファイル差し替え運用を想定します。
+        <strong>「金型入替計画_保存データ.json」</strong>という固定ファイル名で保存します。<br>
+        毎回同じ名前でダウンロードして<strong>上書き保存</strong>することで1ファイル運用できます。
       </div>
-      <button class="btn ok" style="width:100%;justify-content:center;margin-bottom:8px;padding:10px;font-size:12px"
-              onclick="expJSON()">📥 JSONバックアップを書き出す</button>
+      <!-- 保存ボタン（未保存時は色が変わる） -->
+      <button id="saveJsonBtn" class="btn ok" style="width:100%;justify-content:center;margin-bottom:8px;padding:12px;font-size:13px;font-weight:700;transition:all .2s"
+              onclick="expJSON()">💾 保存（JSON上書き）</button>
+      <!-- 読み込みボタン -->
+      <input type="file" id="jf" accept=".json" onchange="impJSON(this)" style="display:none">
+      <button class="btn" style="width:100%;justify-content:center;padding:10px;font-size:12px"
+              onclick="document.getElementById('jf').click()">📂 保存済みJSONを読み込む</button>
       <div id="sv-status" style="font-size:10px;color:var(--text-dim);min-height:18px;margin-top:8px;text-align:center"></div>
+      <div style="margin-top:10px;padding:9px 11px;background:rgba(255,204,0,.07);border:1px solid rgba(255,204,0,.25);border-radius:6px;font-size:10px;color:var(--warn);line-height:1.7">
+        💡 <strong>運用のコツ：</strong>Chromeの「ダウンロード先」をGoogle Driveの同期フォルダにしておくと、保存ボタンを押すだけで自動的にGoogle Driveにも反映されます。
+      </div>
     </div>
 
     <!-- 印刷タブ -->
@@ -1200,6 +1209,7 @@ function saveAutoNow(){
 
 function queueAutoSave(){
   if(skipAutoSave) return;
+  markUnsaved();
   if(autoSaveTimer) clearTimeout(autoSaveTimer);
   autoSaveTimer=setTimeout(saveAutoNow,AUTO_SAVE_MS);
 }
@@ -1268,14 +1278,58 @@ function setSvSt(msg, color='var(--success)'){
   setTimeout(()=>el.textContent='', 4000);
 }
 
+// 固定ファイル名で保存（上書き運用用）
+const JSON_FIXED_NAME = '金型入替計画_保存データ.json';
+let hasUnsavedChanges = false;
+
+function markUnsaved(){
+  hasUnsavedChanges = true;
+  const btn = document.getElementById('saveJsonBtn');
+  if(btn){
+    btn.style.borderColor = 'var(--warn)';
+    btn.style.color = 'var(--warn)';
+    btn.textContent = '💾 保存 ⚠️ 未保存の変更あり';
+  }
+}
+function markSaved(){
+  hasUnsavedChanges = false;
+  const btn = document.getElementById('saveJsonBtn');
+  if(btn){
+    btn.style.borderColor = '';
+    btn.style.color = '';
+    btn.textContent = '💾 保存（JSON上書き）';
+  }
+}
+
 function expJSON(){
   const payload=buildPayload();
-  const fname=`金型入替計画_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'')}_backup.json`;
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([payload],{type:'application/json;charset=utf-8'}));
-  a.download=fname; a.click();
-  setSvSt(`✅ 「${fname}」を保存しました`);
-  toast('📥 JSONバックアップを書き出しました。','ok');
+  a.download=JSON_FIXED_NAME;
+  a.click();
+  markSaved();
+  setSvSt(`✅ 「${JSON_FIXED_NAME}」を保存しました`);
+  toast(`💾 「${JSON_FIXED_NAME}」を保存しました。同じ場所に上書き保存してください。`,'ok');
+}
+
+function impJSON(input){
+  const f=input.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const d=JSON.parse(e.target.result);
+      if(!d.slots) throw new Error('invalid');
+      applyPayload(d);
+      renderAll();
+      markSaved();
+      closeOv('svOv');
+      toast(`📂 「${f.name}」を読み込みました`,'ok');
+    }catch(err){
+      toast('読み込み失敗：正しいJSONファイルか確認してください','err');
+    }
+  };
+  r.readAsText(f);
+  input.value='';
 }
 
 // ================================================================
@@ -1513,7 +1567,13 @@ function releaseLockOnLeave(){
   }catch(err){}
 }
 
-window.addEventListener('beforeunload', releaseLockOnLeave);
+window.addEventListener('beforeunload', e => {
+  releaseLockOnLeave();
+  if(hasUnsavedChanges){
+    e.preventDefault();
+    e.returnValue = '保存されていない変更があります。このページを離れますか？';
+  }
+});
 window.addEventListener('pagehide', releaseLockOnLeave);
 
 // サイドバーを折り畳む／展開する
