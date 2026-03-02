@@ -362,7 +362,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
   .ph h2{font-size:13pt;color:#111;margin-bottom:2px}
   .ph p{font-size:9pt;color:#333}
   .print-only,.print-sheet,#printSheet{display:block!important}
-  .pl-box{break-inside:avoid;page-break-inside:avoid}
+  .pl-box{break-inside:auto;page-break-inside:auto}
   .pl-table th{background:#2f6f60!important;color:#fff!important}
   .pl-table td{background:#fff!important;color:#111!important}
   .pl-all tr.st-replace td,.pl-all tr.st-new-a td{background:#fff4e8!important}
@@ -1012,11 +1012,14 @@ function doPrint(){
 *{box-sizing:border-box}body{font-family:'Noto Sans JP',sans-serif;color:#111;margin:10mm}
 h1{font-size:18px;margin:0 0 2px}p{font-size:12px;margin:0}
 .meta{border-bottom:1px solid #333;padding-bottom:6px;margin-bottom:10px}
-.box{border:1px solid #333;padding:8px 10px;margin-bottom:10px;break-inside:avoid;page-break-inside:avoid}
+.box{border:1px solid #333;padding:8px 10px;margin-bottom:10px}
 .ttl{font-weight:700;margin-bottom:6px}
 .pt{width:100%;border-collapse:collapse;font-size:11px}
 .pt th,.pt td{border:1px solid #222;padding:4px 6px;vertical-align:middle}
 .pt th{background:#2f6f60;color:#fff}
+.pt thead{display:table-header-group}
+.pt tfoot{display:table-footer-group}
+.pt tr{break-inside:avoid;page-break-inside:avoid}
 .empty{padding:8px;border:1px dashed #999;background:#f8f8f8;color:#555}
 .st-replace td,.st-new-a td{background:#fff4e8}
 @page{size:A4 portrait;margin:10mm}
