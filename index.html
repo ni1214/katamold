@@ -13,8 +13,9 @@
   --card-hover:#253650;--bg:#0d1a2a;
   /* 全体のフォントサイズを少し大きくする */
   /* Increase base font sizes for better readability */
-  --font-main:15px;
-  --font-small:13px;
+  --font-scale:1.5;
+  --font-main:calc(15px * var(--font-scale));
+  --font-small:calc(13px * var(--font-scale));
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;
@@ -31,21 +32,21 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
   box-shadow:0 4px 28px rgba(0,212,255,.12);position:sticky;top:0;z-index:100}
 .h-left{display:flex;align-items:center;gap:10px}
 .h-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),#0088cc);
-  border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:18px}
-.h-title{font-size:16px;font-weight:700;color:var(--accent)}
-.h-title span{color:var(--text);font-weight:300;font-size:11px;display:block}
+  border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:calc(18px * var(--font-scale))}
+.h-title{font-size:calc(16px * var(--font-scale));font-weight:700;color:var(--accent)}
+.h-title span{color:var(--text);font-weight:300;font-size:calc(11px * var(--font-scale));display:block}
 .my-chip{display:none;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;
-  border:1px solid var(--border);background:var(--steel-mid);font-size:11px}
+  border:1px solid var(--border);background:var(--steel-mid);font-size:calc(11px * var(--font-scale))}
 .my-dot{width:8px;height:8px;border-radius:50%}
 .h-stats{display:flex;gap:7px}
 .schi{background:var(--steel-mid);border:1px solid var(--border);border-radius:5px;
-  padding:5px 10px;font-size:13px;color:var(--text-dim);font-family:'Share Tech Mono',monospace;text-align:center;min-width:58px}
-.schi strong{font-size:16px;display:block}
+  padding:5px 10px;font-size:calc(13px * var(--font-scale));color:var(--text-dim);font-family:'Share Tech Mono',monospace;text-align:center;min-width:58px}
+.schi strong{font-size:calc(16px * var(--font-scale));display:block}
 .schi.ok strong{color:var(--success)}.schi.rep strong{color:var(--accent2)}.schi.bl strong{color:var(--accent)}
 .schi.rec strong{color:var(--warn)}
 .h-acts{display:flex;gap:6px}
 .btn{padding:8px 16px;border-radius:5px;border:1px solid var(--border);background:var(--steel-mid);
-  color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:'Noto Sans JP',sans-serif;
+  color:var(--text);font-size:calc(13px * var(--font-scale));font-weight:600;cursor:pointer;font-family:'Noto Sans JP',sans-serif;
   transition:all .15s;display:flex;align-items:center;gap:4px;white-space:nowrap}
 .btn:hover{border-color:var(--accent);color:var(--accent)}
 .btn.primary{border-color:var(--accent);color:var(--accent)}
@@ -58,7 +59,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 .btn.warn:hover{background:var(--accent2);color:#fff}
 .btn.on{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700}
 .ro-notice{display:none;background:rgba(255,68,68,.12);border-bottom:1px solid rgba(255,68,68,.35);
-  color:#ffb3b3;padding:8px 14px;font-size:12px;font-weight:600;letter-spacing:.02em}
+  color:#ffb3b3;padding:8px 14px;font-size:calc(12px * var(--font-scale));font-weight:600;letter-spacing:.02em}
 
 /* ===== LAYOUT ===== */
 .layout{display:grid;grid-template-columns:1fr;height:calc(100vh - 60px);overflow:hidden}
@@ -66,26 +67,26 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 /* ===== LEFT ===== */
 .left{display:none!important}
 .lph{padding:10px 13px 8px;border-bottom:1px solid var(--border);background:var(--steel-mid)}
-.lp-lbl{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.lp-lbl{font-size:calc(10px * var(--font-scale));letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
 .sr{position:relative}
 .sr input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;
-  padding:8px 12px 8px 30px;color:var(--text);font-size:13px;font-family:'Noto Sans JP',sans-serif;outline:none;font-weight:500;transition:border-color .2s}
+  padding:8px 12px 8px 30px;color:var(--text);font-size:calc(13px * var(--font-scale));font-family:'Noto Sans JP',sans-serif;outline:none;font-weight:500;transition:border-color .2s}
 .sr input:focus{border-color:var(--accent)}
-.sr::before{content:'🔍';position:absolute;left:7px;top:50%;transform:translateY(-50%);font-size:10px;opacity:.5}
+.sr::before{content:'🔍';position:absolute;left:7px;top:50%;transform:translateY(-50%);font-size:calc(10px * var(--font-scale));opacity:.5}
 .ftabs{display:flex;gap:3px;padding:6px 12px 0;flex-wrap:wrap}
-.ftab{padding:4px 10px;border-radius:3px;font-size:13px;cursor:pointer;border:1px solid var(--border);
+.ftab{padding:4px 10px;border-radius:3px;font-size:calc(13px * var(--font-scale));cursor:pointer;border:1px solid var(--border);
   background:transparent;color:var(--text-dim);transition:all .12s;font-family:'Noto Sans JP',sans-serif;font-weight:600}
 .ftab:hover{border-color:var(--accent);color:var(--accent)}
 .ftab.on{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700}
 .custom-form{padding:8px 12px;border-bottom:1px solid var(--border);background:rgba(255,107,53,.04)}
-.cf-t{font-size:12px;letter-spacing:.1em;color:var(--accent2);margin-bottom:5px;text-transform:uppercase;font-weight:600}
+.cf-t{font-size:calc(12px * var(--font-scale));letter-spacing:.1em;color:var(--accent2);margin-bottom:5px;text-transform:uppercase;font-weight:600}
 .cf-r{display:flex;gap:4px;margin-bottom:4px;align-items:center}
-.cf-r label{font-size:12px;color:var(--text-dim);white-space:nowrap;min-width:36px;font-weight:500}
+.cf-r label{font-size:calc(12px * var(--font-scale));color:var(--text-dim);white-space:nowrap;min-width:36px;font-weight:500}
 .cf-r select,.cf-r input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:3px;
-  padding:6px 8px;color:var(--text);font-size:13px;font-family:'Noto Sans JP',sans-serif;outline:none}
+  padding:6px 8px;color:var(--text);font-size:calc(13px * var(--font-scale));font-family:'Noto Sans JP',sans-serif;outline:none}
 .cf-r select:focus,.cf-r input:focus{border-color:var(--accent2)}
 .cf-add{width:100%;padding:7px;background:var(--steel-mid);border:1px solid var(--accent2);border-radius:4px;
-  color:var(--accent2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Noto Sans JP',sans-serif;transition:all .12s}
+  color:var(--accent2);font-size:calc(13px * var(--font-scale));font-weight:600;cursor:pointer;font-family:'Noto Sans JP',sans-serif;transition:all .12s}
 .cf-add:hover{background:var(--accent2);color:#fff}
 .cl{flex:1;overflow-y:auto;padding:6px}
 .cl::-webkit-scrollbar{width:3px}
@@ -101,13 +102,13 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 @keyframes cp{0%,100%{background:rgba(255,107,53,.5)}50%{background:var(--accent2)}}
 .cc:hover{background:var(--card-hover);border-color:var(--accent);transform:translateX(2px);box-shadow:0 3px 10px rgba(0,212,255,.1)}
 .cc.used{opacity:.3;pointer-events:none}
-.cbg{width:24px;height:24px;border-radius:4px;background:var(--steel-mid);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.cbg{width:24px;height:24px;border-radius:4px;background:var(--steel-mid);display:flex;align-items:center;justify-content:center;font-size:calc(12px * var(--font-scale));flex-shrink:0}
 .ci{flex:1;min-width:0}
-.cn{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cm_{font-size:12px;color:var(--text-dim);font-family:'Share Tech Mono',monospace;margin-top:2px}
-.cst_{font-size:11px;padding:2px 5px;border-radius:2px;background:var(--steel);border:1px solid var(--border);color:var(--text-dim);flex-shrink:0}
+.cn{font-size:calc(14px * var(--font-scale));font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cm_{font-size:calc(12px * var(--font-scale));color:var(--text-dim);font-family:'Share Tech Mono',monospace;margin-top:2px}
+.cst_{font-size:calc(11px * var(--font-scale));padding:2px 5px;border-radius:2px;background:var(--steel);border:1px solid var(--border);color:var(--text-dim);flex-shrink:0}
 .cdl{position:absolute;right:3px;top:3px;width:13px;height:13px;border-radius:2px;border:none;
-  background:rgba(255,68,68,.15);color:var(--danger);font-size:8px;cursor:pointer;display:none;align-items:center;justify-content:center}
+  background:rgba(255,68,68,.15);color:var(--danger);font-size:calc(8px * var(--font-scale));cursor:pointer;display:none;align-items:center;justify-content:center}
 .cc:hover .cdl{display:flex}.cdl:hover{background:var(--danger);color:#fff}
 
 /* ===== RIGHT ===== */
@@ -115,31 +116,31 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 .right::-webkit-scrollbar{width:4px}
 .right::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 .rh{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
-.sec-t{font-size:16px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text)}
+.sec-t{font-size:calc(16px * var(--font-scale));font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text)}
 .sec-t span{color:var(--accent);margin-right:5px}
 .mach-l{background:linear-gradient(90deg,var(--steel-mid),var(--steel));border:1px solid var(--border);
-  border-radius:4px;padding:5px 12px;font-size:11px;font-family:'Share Tech Mono',monospace;color:var(--accent)}
+  border-radius:4px;padding:5px 12px;font-size:calc(11px * var(--font-scale));font-family:'Share Tech Mono',monospace;color:var(--accent)}
 .leg{display:flex;gap:10px;flex-wrap:wrap}
-.lei{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-dim)}
+.lei{display:flex;align-items:center;gap:4px;font-size:calc(11px * var(--font-scale));color:var(--text-dim)}
 .led{width:7px;height:7px;border-radius:50%}
 .view-switch{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:var(--steel)}
 .vs-btn{padding:5px 10px;border:none;border-right:1px solid var(--border);background:transparent;color:var(--text-dim);
-  font-size:11px;font-weight:600;cursor:pointer;font-family:'Noto Sans JP',sans-serif;transition:all .12s}
+  font-size:calc(11px * var(--font-scale));font-weight:600;cursor:pointer;font-family:'Noto Sans JP',sans-serif;transition:all .12s}
 .vs-btn:last-child{border-right:none}
 .vs-btn:hover{color:var(--accent)}
 .vs-btn.on{background:var(--accent);color:#000}
 .stb{background:var(--card);border:1px solid var(--border);border-radius:9px;overflow:hidden}
 .sth{background:var(--steel-mid);padding:8px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
-.stk{font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700}
-.stn{font-size:13px;font-weight:700}
-.stc{margin-left:auto;font-size:12px;color:var(--text-dim)}
+.stk{font-family:'Share Tech Mono',monospace;font-size:calc(13px * var(--font-scale));font-weight:700}
+.stn{font-size:calc(13px * var(--font-scale));font-weight:700}
+.stc{margin-left:auto;font-size:calc(12px * var(--font-scale));color:var(--text-dim)}
 .stc span{font-weight:700}
-.slg{padding:8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:6px}
+.slg{padding:8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(calc(118px * var(--font-scale)),1fr));gap:6px}
 
 /* ===== SLOT ===== */
 .slot{background:var(--steel);border:1.5px solid var(--border);border-radius:6px;padding:7px 6px;
   /* Increase slot height to accommodate detail lines */
-  min-height:138px;position:relative;transition:all .12s;cursor:pointer}
+  min-height:calc(138px * var(--font-scale));position:relative;transition:all .12s;cursor:pointer}
 .slot.empty{border-style:dashed;border-color:rgba(42,63,95,.45);opacity:.5}
 .slot.keep{border-color:rgba(0,230,118,.35);background:rgba(0,230,118,.04)}
 .slot.replace{border-color:rgba(255,107,53,.5);background:rgba(255,107,53,.05)}
@@ -152,24 +153,24 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 .replace .sdot{background:var(--accent2);box-shadow:0 0 5px var(--accent2)}
 .new-a .sdot{background:var(--accent);box-shadow:0 0 5px var(--accent)}
 .empty .sdot{background:var(--border)}
-.s-ico{font-size:20px;text-align:center;margin:10px 0 2px;display:block}
-.s-sh{font-size:14px;font-weight:700;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.s-sz{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text-dim);text-align:center;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.s-dt{font-size:11px;color:var(--text-dim);text-align:center;margin-top:2px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.s-no{position:absolute;bottom:5px;left:5px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--accent);opacity:.75}
+.s-ico{font-size:calc(20px * var(--font-scale));text-align:center;margin:10px 0 2px;display:block}
+.s-sh{font-size:calc(14px * var(--font-scale));font-weight:700;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s-sz{font-family:'Share Tech Mono',monospace;font-size:calc(13px * var(--font-scale));color:var(--text-dim);text-align:center;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s-dt{font-size:calc(11px * var(--font-scale));color:var(--text-dim);text-align:center;margin-top:2px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s-no{position:absolute;bottom:5px;left:5px;font-family:'Share Tech Mono',monospace;font-size:calc(11px * var(--font-scale));color:var(--accent);opacity:.75}
 /* 担当バッジ */
-.s-editor{position:absolute;top:0;left:0;right:0;font-size:11px;font-weight:700;text-align:center;
+.s-editor{position:absolute;top:0;left:0;right:0;font-size:calc(11px * var(--font-scale));font-weight:700;text-align:center;
   padding:2px 4px;border-radius:5px 5px 0 0;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sacts{position:absolute;bottom:3px;right:3px;display:none;gap:2px}
 .slot:hover .sacts{display:flex}
 .sa{width:16px;height:16px;border-radius:3px;border:1px solid var(--border);background:var(--steel-mid);
-  cursor:pointer;font-size:8px;display:flex;align-items:center;justify-content:center;color:var(--text);transition:all .12s}
+  cursor:pointer;font-size:calc(8px * var(--font-scale));display:flex;align-items:center;justify-content:center;color:var(--text);transition:all .12s}
 .sa:hover{border-color:var(--accent2);background:var(--accent2);color:#fff}
 .sa.rv:hover{border-color:var(--success);background:var(--success);color:#000}
 
 /* === Slot purpose indicator === */
 .s-purpose{
-  font-size:11px;
+  font-size:calc(11px * var(--font-scale));
   color:var(--text-dim);
   text-align:center;
   margin-top:2px;
@@ -193,7 +194,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:16px;
+  font-size:calc(16px * var(--font-scale));
   cursor:pointer;
   z-index:2000;
   transition:transform .2s;
@@ -219,20 +220,20 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 /* ===== LOG ===== */
 .logp{background:var(--card);border:1px solid var(--border);border-radius:9px;overflow:hidden}
 .logh{background:var(--steel-mid);padding:9px 14px;display:flex;align-items:center;justify-content:space-between}
-.log-t{font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.log-t{font-size:calc(14px * var(--font-scale));letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600}
 .log-acts{display:flex;gap:5px}
 .log-body{padding:10px;overflow-x:auto}
-.log-empty{text-align:center;color:var(--text-dim);font-size:12px;padding:20px;opacity:.5}
-.lt{width:100%;border-collapse:collapse;font-size:13px;min-width:1200px}
-.lt th{background:var(--steel-mid);padding:8px 12px;text-align:left;color:var(--text);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap;font-size:14px}
-.lt td{padding:7px 12px;border-bottom:1px solid rgba(42,63,95,.4);font-family:'Share Tech Mono',monospace;font-size:13px!important;vertical-align:middle;color:var(--text)!important}
+.log-empty{text-align:center;color:var(--text-dim);font-size:calc(12px * var(--font-scale));padding:20px;opacity:.5}
+.lt{width:100%;border-collapse:collapse;font-size:calc(13px * var(--font-scale));min-width:1200px}
+.lt th{background:var(--steel-mid);padding:8px 12px;text-align:left;color:var(--text);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap;font-size:calc(14px * var(--font-scale))}
+.lt td{padding:7px 12px;border-bottom:1px solid rgba(42,63,95,.4);font-family:'Share Tech Mono',monospace;font-size:calc(13px * var(--font-scale))!important;vertical-align:middle;color:var(--text)!important}
 .lt tr:last-child td{border-bottom:none}
 .lt tr:hover td{background:rgba(0,212,255,.03)}
 .b-rep{color:var(--accent2)}.b-new{color:var(--accent)}
 .old{color:var(--text-dim);text-decoration:line-through;opacity:.6}
 .nw{color:var(--accent3);font-weight:700}
 .rdl{width:16px;height:16px;border-radius:3px;border:1px solid transparent;background:transparent;
-  color:var(--text-dim);font-size:8px;cursor:pointer;transition:all .12s}
+  color:var(--text-dim);font-size:calc(8px * var(--font-scale));cursor:pointer;transition:all .12s}
 .rdl:hover{border-color:var(--danger);color:var(--danger)}
 
 /* ===== OVERLAYS ===== */
@@ -243,8 +244,8 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
   width:410px;max-width:93vw;max-height:88vh;display:flex;flex-direction:column;
   box-shadow:0 20px 60px rgba(0,0,0,.5);transform:translateY(-16px);transition:transform .2s;overflow:hidden}
 .ov.open .modal{transform:translateY(0)}
-.modal h3{font-size:14px;margin-bottom:3px;color:var(--accent)}
-.modal>p{font-size:10px;color:var(--text-dim);margin-bottom:12px}
+.modal h3{font-size:calc(14px * var(--font-scale));margin-bottom:3px;color:var(--accent)}
+.modal>p{font-size:calc(10px * var(--font-scale));color:var(--text-dim);margin-bottom:12px}
 .ml{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
 .ml::-webkit-scrollbar{width:3px}
 .ml::-webkit-scrollbar-thumb{background:var(--border)}
@@ -252,58 +253,58 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
   cursor:pointer;transition:all .12s;display:flex;align-items:center;gap:8px}
 .mop:hover{border-color:var(--accent);background:var(--card-hover)}
 .mop.used{opacity:.3;pointer-events:none}
-.mop .mi{font-size:16px}
-.mop .mn{font-size:11px;font-weight:500}
-.mop .mm{font-size:11px;color:var(--text-dim);font-family:'Share Tech Mono',monospace}
+.mop .mi{font-size:calc(16px * var(--font-scale))}
+.mop .mn{font-size:calc(11px * var(--font-scale));font-weight:500}
+.mop .mm{font-size:calc(11px * var(--font-scale));color:var(--text-dim);font-family:'Share Tech Mono',monospace}
 .m-close{width:100%;padding:8px;background:var(--steel);border:1px solid var(--border);
-  border-radius:5px;color:var(--text-dim);cursor:pointer;font-size:11px;font-family:'Noto Sans JP',sans-serif;transition:all .12s}
+  border-radius:5px;color:var(--text-dim);cursor:pointer;font-size:calc(11px * var(--font-scale));font-family:'Noto Sans JP',sans-serif;transition:all .12s}
 .m-close:hover{border-color:var(--danger);color:var(--danger)}
 /* custom modal */
 .cm-modal{width:470px}
 .fg{margin-bottom:10px}
-.fg label{display:block;font-size:10px;color:var(--text-dim);margin-bottom:3px}
+.fg label{display:block;font-size:calc(10px * var(--font-scale));color:var(--text-dim);margin-bottom:3px}
 .fg input,.fg select,.fg textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;
-  padding:7px 9px;color:var(--text);font-size:11px;font-family:'Noto Sans JP',sans-serif;outline:none;transition:border-color .2s}
+  padding:7px 9px;color:var(--text);font-size:calc(11px * var(--font-scale));font-family:'Noto Sans JP',sans-serif;outline:none;transition:border-color .2s}
 .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--accent)}
 .fg textarea{resize:none;height:55px}
 .fr{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .fh{font-size:11px;color:var(--text-dim);margin-top:2px;opacity:.7}
+  .fh{font-size:calc(11px * var(--font-scale));color:var(--text-dim);margin-top:2px;opacity:.7}
 .pv-area{background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.18);border-radius:5px;padding:9px 11px;margin-bottom:12px}
-  .pv-lbl{font-size:11px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+  .pv-lbl{font-size:calc(11px * var(--font-scale));color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
 .pv-cmp{display:grid;grid-template-columns:1fr 22px 1fr;align-items:center;gap:3px}
-  .pv-old{background:var(--steel);border-radius:4px;padding:6px 9px;font-family:'Share Tech Mono',monospace;font-size:11px;border:1px solid rgba(255,107,53,.3);color:var(--accent2)}
-  .pv-new{background:var(--steel);border-radius:4px;padding:6px 9px;font-family:'Share Tech Mono',monospace;font-size:11px;border:1px solid rgba(0,212,255,.3);color:var(--accent)}
-.pv-arr{text-align:center;color:var(--text-dim);font-size:13px}
+  .pv-old{background:var(--steel);border-radius:4px;padding:6px 9px;font-family:'Share Tech Mono',monospace;font-size:calc(11px * var(--font-scale));border:1px solid rgba(255,107,53,.3);color:var(--accent2)}
+  .pv-new{background:var(--steel);border-radius:4px;padding:6px 9px;font-family:'Share Tech Mono',monospace;font-size:calc(11px * var(--font-scale));border:1px solid rgba(0,212,255,.3);color:var(--accent)}
+.pv-arr{text-align:center;color:var(--text-dim);font-size:calc(13px * var(--font-scale))}
 /* save modal */
 .sv-modal{width:500px}
 .tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:12px}
-.tab{padding:6px 14px;font-size:10px;cursor:pointer;border:none;background:transparent;color:var(--text-dim);
+.tab{padding:6px 14px;font-size:calc(10px * var(--font-scale));cursor:pointer;border:none;background:transparent;color:var(--text-dim);
   transition:all .12s;font-family:'Noto Sans JP',sans-serif;border-bottom:2px solid transparent;margin-bottom:-1px}
 .tab.on{color:var(--accent);border-bottom-color:var(--accent)}
 .tc{display:none}.tc.on{display:block}
 .sv-in{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;
-  padding:7px 9px;color:var(--text);font-size:11px;font-family:'Noto Sans JP',sans-serif;outline:none;margin-bottom:7px}
+  padding:7px 9px;color:var(--text);font-size:calc(11px * var(--font-scale));font-family:'Noto Sans JP',sans-serif;outline:none;margin-bottom:7px}
 .sv-in:focus{border-color:var(--accent)}
 .sv-item{display:flex;align-items:center;gap:5px;padding:6px 9px;background:var(--steel);
   border:1px solid var(--border);border-radius:5px;margin-top:4px}
 .sv-item-info{flex:1;min-width:0}
-.sv-item-name{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sv-item-date{font-size:8px;color:var(--text-dim);font-family:'Share Tech Mono',monospace}
+.sv-item-name{font-size:calc(11px * var(--font-scale));font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sv-item-date{font-size:calc(8px * var(--font-scale));color:var(--text-dim);font-family:'Share Tech Mono',monospace}
 /* info box */
 .info-box{background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.2);border-radius:6px;
-  padding:10px 12px;font-size:10px;color:var(--text-dim);line-height:1.7;margin-bottom:10px}
+  padding:10px 12px;font-size:calc(10px * var(--font-scale));color:var(--text-dim);line-height:1.7;margin-bottom:10px}
 .info-box strong{color:var(--accent)}
 .warn-box{background:rgba(255,204,0,.05);border:1px solid rgba(255,204,0,.2);border-radius:6px;
-  padding:9px 12px;font-size:10px;color:var(--warn);line-height:1.6;margin-bottom:10px}
+  padding:9px 12px;font-size:calc(10px * var(--font-scale));color:var(--warn);line-height:1.6;margin-bottom:10px}
 .step{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:var(--steel);border-radius:6px;margin-bottom:6px}
-.step-n{width:20px;height:20px;border-radius:50%;background:var(--accent);color:#000;font-size:11px;font-weight:700;
+.step-n{width:20px;height:20px;border-radius:50%;background:var(--accent);color:#000;font-size:calc(11px * var(--font-scale));font-weight:700;
   display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
-.step-t{font-size:11px;font-weight:600;margin-bottom:2px}
-.step-d{font-size:10px;color:var(--text-dim);line-height:1.5}
+.step-t{font-size:calc(11px * var(--font-scale));font-weight:600;margin-bottom:2px}
+.step-d{font-size:calc(10px * var(--font-scale));color:var(--text-dim);line-height:1.5}
 
 /* ===== TOAST ===== */
 .toast{position:fixed;bottom:18px;right:18px;background:var(--steel-mid);border:1px solid var(--accent);
-  border-radius:7px;padding:9px 14px;font-size:11px;z-index:500;transform:translateY(45px);
+  border-radius:7px;padding:9px 14px;font-size:calc(11px * var(--font-scale));z-index:500;transform:translateY(45px);
   opacity:0;transition:all .28s;pointer-events:none;max-width:300px;line-height:1.5}
 .toast.show{transform:translateY(0);opacity:1}
 .toast.ok{border-color:var(--success);color:var(--success)}
@@ -371,7 +372,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
     <button class="btn warn" id="editBtn" onclick="startEditing()">✏️ 編集開始</button>
     <button class="btn ok" id="endBtn" onclick="endEditing()" style="display:none;">✔ 編集終了</button>
     <button id="saveJsonBtn" class="btn ok" onclick="expJSON()" style="transition:all .2s">💾 保存（JSON上書き）</button>
-    <button class="btn" onclick="openSaveModal()" style="font-size:11px">📂 読込・その他</button>
+    <button class="btn" onclick="openSaveModal()" style="font-size:calc(11px * var(--font-scale))">📂 読込・その他</button>
     <button class="btn primary" onclick="doPrint()">🖨️ 印刷・PDF</button>
     <button class="btn danger" onclick="resetAll()">↺ リセット</button>
   </div>
@@ -499,7 +500,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
     </div>
     <div class="fg"><label>備考・メモ（会議メモ、確認事項など）</label>
       <textarea id="cm-nt" placeholder="例: 現行より0.3大きくする / 要確認"></textarea></div>
-    <button class="btn primary" style="width:100%;margin-bottom:7px;padding:9px;font-size:12px;justify-content:center"
+    <button class="btn primary" style="width:100%;margin-bottom:7px;padding:9px;font-size:calc(12px * var(--font-scale));justify-content:center"
             onclick="applyCm()">✅ この内容で入替える</button>
     <button class="m-close" onclick="closeOv('cmOv')">キャンセル</button>
   </div>
@@ -525,7 +526,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
       <input type="text" id="bm-dt" placeholder="例: CL=0.30, 空き"></div>
     <div class="fg"><label>用途</label>
       <input type="text" id="bm-purpose" placeholder="例: M4タップ下穴"></div>
-    <button class="btn primary" style="width:100%;margin-bottom:7px;padding:9px;font-size:12px;justify-content:center"
+    <button class="btn primary" style="width:100%;margin-bottom:7px;padding:9px;font-size:calc(12px * var(--font-scale));justify-content:center"
             onclick="saveBaseSlot()">✅ デフォルトを保存</button>
     <button class="m-close" onclick="closeOv('baseOv')">キャンセル</button>
   </div>
@@ -551,7 +552,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
       <div class="step">
         <div class="step-n">1</div>
         <div><div class="step-t">共有サーバー経由で開く</div>
-        <div class="step-d">例: <code style="background:var(--bg);padding:2px 5px;border-radius:3px;font-size:9px">http://社内PC名:8787/金型入替シミュレーター.html</code></div></div>
+        <div class="step-d">例: <code style="background:var(--bg);padding:2px 5px;border-radius:3px;font-size:calc(9px * var(--font-scale))">http://社内PC名:8787/金型入替シミュレーター.html</code></div></div>
       </div>
       <div class="step">
         <div class="step-n">2</div>
@@ -576,14 +577,14 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
         毎回同じ名前でダウンロードして<strong>上書き保存</strong>することで1ファイル運用できます。
       </div>
       <!-- 保存ボタン（未保存時は色が変わる） -->
-      <button id="saveJsonBtn" class="btn ok" style="width:100%;justify-content:center;margin-bottom:8px;padding:12px;font-size:13px;font-weight:700;transition:all .2s"
+      <button id="saveJsonBtn" class="btn ok" style="width:100%;justify-content:center;margin-bottom:8px;padding:12px;font-size:calc(13px * var(--font-scale));font-weight:700;transition:all .2s"
               onclick="expJSON()">💾 保存（JSON上書き）</button>
       <!-- 読み込みボタン -->
       <input type="file" id="jf" accept=".json" onchange="impJSON(this)" style="display:none">
-      <button class="btn" style="width:100%;justify-content:center;padding:10px;font-size:12px"
+      <button class="btn" style="width:100%;justify-content:center;padding:10px;font-size:calc(12px * var(--font-scale))"
               onclick="document.getElementById('jf').click()">📂 保存済みJSONを読み込む</button>
-      <div id="sv-status" style="font-size:10px;color:var(--text-dim);min-height:18px;margin-top:8px;text-align:center"></div>
-      <div style="margin-top:10px;padding:9px 11px;background:rgba(255,204,0,.07);border:1px solid rgba(255,204,0,.25);border-radius:6px;font-size:10px;color:var(--warn);line-height:1.7">
+      <div id="sv-status" style="font-size:calc(10px * var(--font-scale));color:var(--text-dim);min-height:18px;margin-top:8px;text-align:center"></div>
+      <div style="margin-top:10px;padding:9px 11px;background:rgba(255,204,0,.07);border:1px solid rgba(255,204,0,.25);border-radius:6px;font-size:calc(10px * var(--font-scale));color:var(--warn);line-height:1.7">
         💡 <strong>運用のコツ：</strong>Chromeの「ダウンロード先」をGoogle Driveの同期フォルダにしておくと、保存ボタンを押すだけで自動的にGoogle Driveにも反映されます。
       </div>
     </div>
@@ -603,7 +604,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
         <div><div class="step-t">PDFにする場合</div>
         <div class="step-d">プリンターの選択で <strong>「PDFとして保存」</strong>（Microsoft Print to PDF / Chrome PDF）を選択</div></div>
       </div>
-      <button class="btn primary" style="width:100%;justify-content:center;padding:10px;font-size:12px;margin-top:8px"
+      <button class="btn primary" style="width:100%;justify-content:center;padding:10px;font-size:calc(12px * var(--font-scale));margin-top:8px"
               onclick="closeOv('svOv');doPrint()">🖨️ 印刷プレビューを開く</button>
     </div>
 
@@ -825,7 +826,7 @@ function renderTurret(){
     const b=document.createElement('div'); b.className='stb';
     b.innerHTML=`<div class="sth">
       <div class="stk" style="color:${info.color}">${key}</div>
-      <div class="stn">${info.name}<span style="font-size:11px;color:var(--text);opacity:0.75;font-weight:400;margin-left:8px">${info.range}</span></div>
+      <div class="stn">${info.name}<span style="font-size:calc(11px * var(--font-scale));color:var(--text);opacity:0.75;font-weight:400;margin-left:8px">${info.range}</span></div>
       <div class="stc"><span style="color:${info.color}">${ss.length}/${all.length}</span>ST ｜ 継続<span style="color:var(--success)">${kn}</span> ｜ 変更<span style="color:var(--accent2)">${rn}</span></div>
     </div><div class="slg" id="g-${key}"></div>`;
     con.appendChild(b);
@@ -896,17 +897,17 @@ function renderLog(){
     const shownEditor=displayName(s.editor);
     return `<tr>
       <td style="color:var(--text-dim)">${n}</td>
-      <td style="font-size:9px">${ST[s.st].name}</td>
-      <td style="color:var(--accent);font-size:9px">No.${s.no}/Sl.${s.num}</td>
+      <td style="font-size:calc(9px * var(--font-scale))">${ST[s.st].name}</td>
+      <td style="color:var(--accent);font-size:calc(9px * var(--font-scale))">No.${s.no}/Sl.${s.num}</td>
       <td><span class="old">${s.oShape||'空き'} ${s.oSize||''}</span></td>
       <td style="color:var(--text-dim)">→</td>
       <td><span class="nw">${s.nShape} ${s.nSize}</span></td>
-      <td style="font-size:9px;color:var(--text-dim)">${escHtml(s.nDetail||'')}</td>
-      <td style="font-size:9px;color:var(--text-dim)">${escHtml(purp)}</td>
+      <td style="font-size:calc(9px * var(--font-scale));color:var(--text-dim)">${escHtml(s.nDetail||'')}</td>
+      <td style="font-size:calc(9px * var(--font-scale));color:var(--text-dim)">${escHtml(purp)}</td>
       <td>${badge}</td>
-      <td style="font-size:9px;color:${s.editorColor||'var(--text-dim)'}">${shownEditor?`● ${escHtml(shownEditor)}`:'―'}</td>
-      <td style="font-size:9px;color:var(--text-dim);max-width:120px">${escHtml(s.note||'')}</td>
-      <td style="font-size:8px;color:var(--text-dim);white-space:nowrap">${s.at||''}</td>
+      <td style="font-size:calc(9px * var(--font-scale));color:${s.editorColor||'var(--text-dim)'}">${shownEditor?`● ${escHtml(shownEditor)}`:'―'}</td>
+      <td style="font-size:calc(9px * var(--font-scale));color:var(--text-dim);max-width:120px">${escHtml(s.note||'')}</td>
+      <td style="font-size:calc(8px * var(--font-scale));color:var(--text-dim);white-space:nowrap">${s.at||''}</td>
       <td class="no-print"><button class="rdl" onclick="doRestore(event,${idx})" title="元に戻す">↩</button></td>
     </tr>`;
   }).join('');
@@ -921,7 +922,7 @@ function renderCands(){
     if(q&&!c.shape.includes(q)&&!c.size.toLowerCase().includes(q)&&!(c.detail||'').includes(q)) return false;
     return true;
   });
-  if(!f.length){el.innerHTML='<div style="text-align:center;color:var(--text-dim);font-size:10px;padding:18px;opacity:.5">該当なし</div>';return;}
+  if(!f.length){el.innerHTML='<div style="text-align:center;color:var(--text-dim);font-size:calc(10px * var(--font-scale));padding:18px;opacity:.5">該当なし</div>';return;}
   f.forEach(c=>{
     const isU=used.has(c.id), isCu=c.id.startsWith('cu-');
     const d=document.createElement('div');
@@ -929,7 +930,7 @@ function renderCands(){
     d.draggable=!isU; d.dataset.id=c.id;
     d.innerHTML=`<div class="cbg">${ic(c.shape)}</div>
       <div class="ci">
-        <div class="cn">${c.shape} ${c.size}${isCu?' <span style="font-size:7px;color:var(--accent2);border:1px solid;border-radius:2px;padding:0 2px">カスタム</span>':''}</div>
+        <div class="cn">${c.shape} ${c.size}${isCu?' <span style="font-size:calc(7px * var(--font-scale));color:var(--accent2);border:1px solid;border-radius:2px;padding:0 2px">カスタム</span>':''}</div>
         <div class="cm_">${c.no}｜${c.detail||''}</div>
       </div>
       <div class="cst_">${c.range}</div>
@@ -1111,7 +1112,7 @@ function openSlotOv(e,idx){
   cb.innerHTML=`<div class="mi">✏️</div><div><div class="mn" style="color:var(--accent2)">任意サイズを直接入力する</div><div class="mm">リストにない金型も指定できます</div></div>`;
   cb.addEventListener('click',()=>{closeOv('slotOv');openCmOv(idx);}); ml.appendChild(cb);
   const sep=document.createElement('div');
-  sep.style.cssText='font-size:8px;color:var(--text-dim);padding:5px 0 2px;opacity:.5;letter-spacing:.1em;text-transform:uppercase';
+  sep.style.cssText='font-size:calc(8px * var(--font-scale));color:var(--text-dim);padding:5px 0 2px;opacity:.5;letter-spacing:.1em;text-transform:uppercase';
   sep.textContent='— 候補リストから選択 —'; ml.appendChild(sep);
   // ステーション一致を先に表示
   [...cands.filter(c=>c.range===s.st),...cands.filter(c=>c.range!==s.st)].forEach(c=>{
@@ -1803,3 +1804,4 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 </script>
 </body>
 </html>
+
