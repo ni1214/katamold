@@ -630,6 +630,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
     <div class="tabs">
       <button class="tab on" onclick="switchTab('auto',this)">💾 自動保存</button>
       <button class="tab" onclick="switchTab('backup',this)">📦 バックアップ</button>
+      <button class="tab" onclick="switchTab('drive',this)">☁ Google Drive</button>
       <button class="tab" onclick="switchTab('print',this)">🖨️ 印刷・PDF</button>
     </div>
 
@@ -679,6 +680,29 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
       </div>
     </div>
 
+    <!-- Google Driveタブ -->
+    <div class="tc" id="tc-drive">
+      <div class="info-box">
+        <strong>Google Drive連携</strong>（別PC共有向け）<br>
+        事前に用意した Google Apps Script の WebアプリURLを設定すると、保存・読込を同じDrive上で共有できます。
+      </div>
+      <div class="fg">
+        <label>WebアプリURL（Apps Script）</label>
+        <input class="sv-in" id="driveEndpoint" type="text" placeholder="https://script.google.com/macros/s/.../exec" onblur="saveDriveSettingsFromUi()">
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+        <input id="driveAutoSync" type="checkbox" onchange="toggleDriveAutoSync(this.checked)">
+        <label for="driveAutoSync" style="font-size:calc(11px * var(--font-scale));color:var(--text-dim)">変更時にDriveへ自動保存</label>
+      </div>
+      <button class="btn ok" style="width:100%;justify-content:center;margin-bottom:6px;padding:10px"
+              onclick="driveSaveNow(true)">☁ Driveに保存</button>
+      <button class="btn" style="width:100%;justify-content:center;margin-bottom:8px;padding:10px"
+              onclick="driveLoadNow()">📥 Driveから読み込む</button>
+      <div class="warn-box">
+        Drive同期状態: <span id="driveStatusText">未設定</span>
+      </div>
+    </div>
+
     <!-- 印刷タブ -->
     <div class="tc" id="tc-print">
       <div class="info-box">
@@ -712,6 +736,9 @@ const SHARED_NAME='共有モード';
 const SHARED_COLOR='#00d4ff';
 const AUTO_SAVE_KEY='moldSimulatorAutoSaveV1';
 const AUTO_SAVE_MS=700;
+const DRIVE_ENDPOINT_KEY='moldSimulatorDriveEndpointV1';
+const DRIVE_AUTO_SYNC_KEY='moldSimulatorDriveAutoSyncV1';
+const DRIVE_SYNC_DEBOUNCE_MS=2000;
 const REMOTE_STATE_URL='/api/state';
 const REMOTE_POLL_MS=3000;
 const REMOTE_LOCK_URL='/api/lock';
@@ -843,6 +870,10 @@ let turretViewMode='replacement';
 let turretShapeFilter='all';
 let turretSearchText='';
 let stationGuide=JSON.parse(JSON.stringify(DEFAULT_STATION_GUIDE));
+let driveEndpoint='';
+let driveAutoSync=false;
+let driveSyncTimer=null;
+let driveSaveInFlight=false;
 
 function normalizeSlotMeta(s){
   if(s.purpose===undefined||s.purpose===null) s.purpose='';
@@ -1517,6 +1548,128 @@ function updateSyncStatus(text){
   el.textContent=text||'未接続';
 }
 
+function updateDriveStatus(text){
+  const el=document.getElementById('driveStatusText');
+  if(!el) return;
+  el.textContent=text||'未設定';
+}
+
+function loadDriveSettings(){
+  try{
+    driveEndpoint=(localStorage.getItem(DRIVE_ENDPOINT_KEY)||'').trim();
+    driveAutoSync=localStorage.getItem(DRIVE_AUTO_SYNC_KEY)==='1';
+  }catch(e){
+    driveEndpoint='';
+    driveAutoSync=false;
+  }
+}
+
+function syncDriveSettingsUi(){
+  const ep=document.getElementById('driveEndpoint');
+  const chk=document.getElementById('driveAutoSync');
+  if(ep) ep.value=driveEndpoint||'';
+  if(chk) chk.checked=!!driveAutoSync;
+  updateDriveStatus(driveEndpoint?'設定済み':'未設定');
+}
+
+function saveDriveSettingsFromUi(){
+  const ep=document.getElementById('driveEndpoint');
+  driveEndpoint=(ep?ep.value:'').trim();
+  try{
+    localStorage.setItem(DRIVE_ENDPOINT_KEY,driveEndpoint);
+  }catch(e){}
+  updateDriveStatus(driveEndpoint?'設定済み':'未設定');
+}
+
+function toggleDriveAutoSync(checked){
+  driveAutoSync=!!checked;
+  try{
+    localStorage.setItem(DRIVE_AUTO_SYNC_KEY,driveAutoSync?'1':'0');
+  }catch(e){}
+  updateDriveStatus(driveEndpoint?(driveAutoSync?'設定済み（自動保存ON）':'設定済み（自動保存OFF）'):'未設定');
+}
+
+function queueDriveSync(){
+  if(!driveAutoSync) return;
+  if(!driveEndpoint) return;
+  if(driveSyncTimer) clearTimeout(driveSyncTimer);
+  driveSyncTimer=setTimeout(()=>{ void driveSaveNow(false); }, DRIVE_SYNC_DEBOUNCE_MS);
+}
+
+async function driveSaveNow(showToast){
+  if(showToast===undefined) showToast=true;
+  saveDriveSettingsFromUi();
+  if(!driveEndpoint){
+    if(showToast) toast('DriveのWebアプリURLを設定してください','warn');
+    updateDriveStatus('未設定');
+    return false;
+  }
+  if(driveSaveInFlight) return false;
+  driveSaveInFlight=true;
+  try{
+    const res=await fetch(driveEndpoint,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({
+        action:'save',
+        filename:JSON_FIXED_NAME,
+        payload:buildStateObject()
+      })
+    });
+    if(!res.ok) throw new Error(`http_${res.status}`);
+    const out=await res.json();
+    if(out&&out.ok===false) throw new Error(out.error||'drive_save_failed');
+    const at=out&&out.modifiedTime?new Date(out.modifiedTime):new Date();
+    updateDriveStatus(`最終保存: ${at.toLocaleString('ja-JP')}`);
+    if(showToast) toast('☁ Google Driveに保存しました','ok');
+    return true;
+  }catch(err){
+    updateDriveStatus(`保存失敗: ${String(err.message||err)}`);
+    if(showToast) toast('Google Drive保存に失敗しました','err');
+    return false;
+  }finally{
+    driveSaveInFlight=false;
+  }
+}
+
+async function driveLoadNow(){
+  saveDriveSettingsFromUi();
+  if(!driveEndpoint){
+    toast('DriveのWebアプリURLを設定してください','warn');
+    updateDriveStatus('未設定');
+    return false;
+  }
+  try{
+    const res=await fetch(driveEndpoint,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({
+        action:'load',
+        filename:JSON_FIXED_NAME
+      })
+    });
+    if(!res.ok) throw new Error(`http_${res.status}`);
+    const out=await res.json();
+    if(out&&out.ok===false) throw new Error(out.error||'drive_load_failed');
+    if(!out||!out.payload||!out.payload.slots) throw new Error('payload_invalid');
+    const prev=skipAutoSave;
+    skipAutoSave=true;
+    applyPayload(out.payload);
+    renderAll();
+    skipAutoSave=prev;
+    updateAutoStatus(out.payload.at||out.modifiedTime||null);
+    markSaved();
+    const at=out&&out.modifiedTime?new Date(out.modifiedTime):new Date();
+    updateDriveStatus(`最終読込: ${at.toLocaleString('ja-JP')}`);
+    toast('📥 Google Driveから読み込みました','info');
+    return true;
+  }catch(err){
+    updateDriveStatus(`読込失敗: ${String(err.message||err)}`);
+    toast('Google Drive読込に失敗しました','err');
+    return false;
+  }
+}
+
 function isRemoteCapable(){
   return location.protocol==='http:'||location.protocol==='https:';
 }
@@ -1615,6 +1768,7 @@ function queueAutoSave(){
   markUnsaved();
   if(autoSaveTimer) clearTimeout(autoSaveTimer);
   autoSaveTimer=setTimeout(saveAutoNow,AUTO_SAVE_MS);
+  queueDriveSync();
 }
 
 function restoreAutoSave(){
@@ -1654,6 +1808,7 @@ async function initRemoteSync(){
 }
 
 function openSaveModal(){
+  syncDriveSettingsUi();
   if(remoteMode){
     void pollRemoteState(false);
   }else{
@@ -2024,6 +2179,8 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   if(myd) myd.style.background=myColor;
   if(myc) myc.style.display=shownMyName?'flex':'none';
   updateViewSwitchUi();
+  loadDriveSettings();
+  syncDriveSettingsUi();
   skipAutoSave=true;
   let restored=await initRemoteSync();
   if(!restored){
