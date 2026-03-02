@@ -316,6 +316,15 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 .pv-arr{text-align:center;color:var(--text-dim);font-size:calc(13px * var(--font-scale))}
 /* save modal */
 .sv-modal{width:500px}
+.wiz-modal{width:640px;max-width:95vw}
+.wiz-body{background:var(--steel);border:1px solid var(--border);border-radius:6px;padding:12px;line-height:1.75;
+  font-size:calc(11px * var(--font-scale));color:var(--text);min-height:170px;max-height:48vh;overflow:auto}
+.wiz-body h4{font-size:calc(12px * var(--font-scale));color:var(--accent);margin:0 0 6px}
+.wiz-body p{margin:0 0 8px}
+.wiz-body ul{margin:0 0 6px 18px;padding:0}
+.wiz-body li{margin:0 0 4px}
+.wiz-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px}
+.wiz-step{font-size:calc(10px * var(--font-scale));color:var(--text-dim)}
 .guide-modal{width:980px}
 .guide-wrap{overflow:auto;max-height:62vh;border:1px solid var(--border);border-radius:6px;margin-bottom:10px}
 .guide-table{width:100%;border-collapse:collapse;min-width:840px;background:var(--steel)}
@@ -409,6 +418,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
     <button class="btn ok" id="endBtn" onclick="endEditing()" style="display:none;">✔ 編集終了（解放）</button>
     <button id="saveJsonBtn" class="btn ok" onclick="driveSaveNow(true)" style="transition:all .2s">☁ Drive保存</button>
     <button class="btn" onclick="openGuideOv()">📘 ステーション表</button>
+    <button class="btn" onclick="openOnboardingWizard(true)">❓ 使い方</button>
     <button class="btn" onclick="openSaveModal()" style="font-size:calc(11px * var(--font-scale))">☁ Drive同期・その他</button>
     <button class="btn primary" onclick="doPrint()">🖨️ 印刷・PDF</button>
     <button class="btn danger" onclick="resetAll()">↺ リセット</button>
@@ -670,6 +680,29 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
   </div>
 </div>
 
+<!-- 初回説明ウィザード -->
+<div class="ov" id="wizOv">
+  <div class="modal wiz-modal">
+    <h3>🧭 はじめての方向けガイド</h3>
+    <p id="wizSub">この画面の基本操作を順に説明します。</p>
+    <div class="wiz-body" id="wizBody"></div>
+    <div class="fg" id="wizPrefWrap" style="display:none;margin-top:8px;margin-bottom:0">
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:0">
+        <input id="wizDontShow" type="checkbox" style="width:auto">
+        この端末では次回から表示しない
+      </label>
+    </div>
+    <div class="wiz-nav">
+      <div class="wiz-step" id="wizStep"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" id="wizPrevBtn" type="button" onclick="wizardPrev()">◀ 戻る</button>
+        <button class="btn" type="button" onclick="closeOnboardingWizard()">閉じる</button>
+        <button class="btn primary" id="wizNextBtn" type="button" onclick="wizardNext()">次へ ▶</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 保存・共有モーダル -->
 <div class="ov" id="svOv">
   <div class="modal sv-modal">
@@ -792,6 +825,49 @@ const REMOTE_POLL_MS=3000;
 const REMOTE_LOCK_POLL_MS=2000;
 const REMOTE_LOCK_HEARTBEAT_MS=12000;
 const REMOTE_LOCK_TTL_MS=45000;
+const ONBOARDING_DISMISS_KEY='moldSimulatorOnboardingDismissV1';
+const ONBOARDING_STEPS=[
+  {
+    title:'1. 画面の基本',
+    body:`<h4>画面の見方</h4>
+      <ul>
+        <li>中央がタレット配置図、左が候補リストです。</li>
+        <li>上部の「入替表示 / デフォルト表示」で表示内容を切替できます。</li>
+      </ul>`
+  },
+  {
+    title:'2. 絞り込み',
+    body:`<h4>素早く探す</h4>
+      <ul>
+        <li>形状フィルター、ステーションフィルター、検索を同時に使えます。</li>
+        <li>条件に合うスロットだけが中央に表示されます。</li>
+      </ul>`
+  },
+  {
+    title:'3. 候補追加と入替',
+    body:`<h4>候補を作ってから選択</h4>
+      <ul>
+        <li>候補は「任意サイズを追加」で作成します（固定候補はありません）。</li>
+        <li>スロットを開き、候補リストから選んで入替します。</li>
+      </ul>`
+  },
+  {
+    title:'4. 運用ステータス',
+    body:`<h4>ロック / 要変更 / 要確認</h4>
+      <ul>
+        <li>デフォルト編集で各スロットの運用ステータスを設定できます。</li>
+        <li>ロックは入替不可、要変更/要確認は入替可能です。</li>
+      </ul>`
+  },
+  {
+    title:'5. 共有と保存',
+    body:`<h4>Google Drive同期</h4>
+      <ul>
+        <li>保存・読込・編集ロックは Google Drive で共有されます。</li>
+        <li>右上の「Drive保存」で即時保存、通常は自動同期です。</li>
+      </ul>`
+  }
+];
 const ST={
   A:{name:'Aステーション',range:'1.6～12.7Φ',color:'#00d4ff'},
   B:{name:'Bステーション',range:'12.8～31.7Φ',color:'#ff6b35'},
@@ -911,6 +987,7 @@ let lockHeartbeatTimer=null;
 let lockToastKey='';
 let autoAcquirePausedUntil=0;
 let autoAcquireInFlight=false;
+let onboardingStep=0;
 // 共有編集ロック用セッションIDと編集モードフラグ
 let sessionId = Math.random().toString(36).substr(2, 9);
 let editing = false;
@@ -1800,8 +1877,85 @@ function saveSlotPurposeOnly(){
   toast('✅ 用途を保存しました','ok');
 }
 
+function isOnboardingDismissed(){
+  try{
+    return localStorage.getItem(ONBOARDING_DISMISS_KEY)==='1';
+  }catch(e){
+    return false;
+  }
+}
+
+function setOnboardingDismissed(v){
+  try{
+    if(v) localStorage.setItem(ONBOARDING_DISMISS_KEY,'1');
+    else localStorage.removeItem(ONBOARDING_DISMISS_KEY);
+  }catch(e){}
+}
+
+function renderOnboardingStep(){
+  const step=ONBOARDING_STEPS[onboardingStep]||ONBOARDING_STEPS[0];
+  const bodyEl=document.getElementById('wizBody');
+  const subEl=document.getElementById('wizSub');
+  const stepEl=document.getElementById('wizStep');
+  const prevBtn=document.getElementById('wizPrevBtn');
+  const nextBtn=document.getElementById('wizNextBtn');
+  const prefWrap=document.getElementById('wizPrefWrap');
+  const dontShow=document.getElementById('wizDontShow');
+  const isLast=onboardingStep===ONBOARDING_STEPS.length-1;
+  if(subEl) subEl.textContent=step.title||'使い方ガイド';
+  if(bodyEl) bodyEl.innerHTML=step.body||'';
+  if(stepEl) stepEl.textContent=`${onboardingStep+1} / ${ONBOARDING_STEPS.length}`;
+  if(prevBtn) prevBtn.disabled=onboardingStep===0;
+  if(nextBtn) nextBtn.textContent=isLast?'完了':'次へ ▶';
+  if(prefWrap) prefWrap.style.display=isLast?'block':'none';
+  if(dontShow && isLast) dontShow.checked=isOnboardingDismissed();
+}
+
+function applyOnboardingPreferenceFromUi(){
+  if(onboardingStep!==ONBOARDING_STEPS.length-1) return;
+  const dontShow=document.getElementById('wizDontShow');
+  if(!dontShow) return;
+  setOnboardingDismissed(Boolean(dontShow.checked));
+}
+
+function openOnboardingWizard(force=false){
+  if(!force && isOnboardingDismissed()) return;
+  onboardingStep=0;
+  renderOnboardingStep();
+  const ov=document.getElementById('wizOv');
+  if(ov) ov.classList.add('open');
+}
+
+function closeOnboardingWizard(){
+  applyOnboardingPreferenceFromUi();
+  closeOv('wizOv');
+}
+
+function wizardNext(){
+  if(onboardingStep<ONBOARDING_STEPS.length-1){
+    onboardingStep+=1;
+    renderOnboardingStep();
+    return;
+  }
+  closeOnboardingWizard();
+}
+
+function wizardPrev(){
+  if(onboardingStep<=0) return;
+  onboardingStep-=1;
+  renderOnboardingStep();
+}
+
+function maybeAutoOpenOnboardingWizard(){
+  openOnboardingWizard(false);
+}
+
 function closeOv(id){ document.getElementById(id).classList.remove('open'); }
-document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); }));
+document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{
+  if(e.target!==o) return;
+  if(o.id==='wizOv'){ closeOnboardingWizard(); return; }
+  o.classList.remove('open');
+}));
 
 // Enter in purpose fields should confirm and save.
 (() => {
@@ -2525,6 +2679,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   // 編集状態確認（定期ポーリング開始）
   startLockPolling();
   await checkEditing();
+  maybeAutoOpenOnboardingWizard();
 });
 </script>
 </body>
