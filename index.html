@@ -34,7 +34,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
   border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:18px}
 .h-title{font-size:16px;font-weight:700;color:var(--accent)}
 .h-title span{color:var(--text);font-weight:300;font-size:11px;display:block}
-.my-chip{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;
+.my-chip{display:none;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;
   border:1px solid var(--border);background:var(--steel-mid);font-size:11px}
 .my-dot{width:8px;height:8px;border-radius:50%}
 .h-stats{display:flex;gap:7px}
@@ -357,7 +357,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
     <div class="schi"><strong id="sc-e">0</strong>空き</div>
   </div>
   <div class="h-acts">
-    <div class="my-chip">
+    <div class="my-chip" id="myChip">
       <div class="my-dot" id="myDot"></div>
       <span id="myName">共有モード</span>
     </div>
@@ -755,9 +755,10 @@ function renderTurret(){
       const idx=slots.indexOf(s);
       const el=document.createElement('div');
       el.className=`slot ${st2}`;
-      // 担当バッジ
-      const editorBadge=s.editor
-        ?`<div class="s-editor" style="background:${s.editorColor||'var(--accent)'}22;color:${s.editorColor||'var(--accent)'}">● ${escHtml(s.editor)}</div>`:'';
+      // 担当バッジ（固定の共有名は画面に出さない）
+      const shownEditor=displayName(s.editor);
+      const editorBadge=shownEditor
+        ?`<div class="s-editor" style="background:${s.editorColor||'var(--accent)'}22;color:${s.editorColor||'var(--accent)'}">● ${escHtml(shownEditor)}</div>`:'';
       const purp = s.nPurpose || s.purpose || '';
       el.innerHTML=`${editorBadge}
         <div class="sdot"></div>
@@ -799,6 +800,7 @@ function renderLog(){
     const badge=st2==='replace'?'<span class="b-rep">🔄 入替</span>':'<span class="b-new">✨ 新規</span>';
     const idx=slots.indexOf(s);
     const purp = s.nPurpose || s.purpose || '';
+    const shownEditor=displayName(s.editor);
     return `<tr>
       <td style="color:var(--text-dim)">${n}</td>
       <td style="font-size:9px">${ST[s.st].name}</td>
@@ -809,7 +811,7 @@ function renderLog(){
       <td style="font-size:9px;color:var(--text-dim)">${escHtml(s.nDetail||'')}</td>
       <td style="font-size:9px;color:var(--text-dim)">${escHtml(purp)}</td>
       <td>${badge}</td>
-      <td style="font-size:9px;color:${s.editorColor||'var(--text-dim)'}">● ${s.editor||'―'}</td>
+      <td style="font-size:9px;color:${s.editorColor||'var(--text-dim)'}">${shownEditor?`● ${escHtml(shownEditor)}`:'―'}</td>
       <td style="font-size:9px;color:var(--text-dim);max-width:120px">${escHtml(s.note||'')}</td>
       <td style="font-size:8px;color:var(--text-dim);white-space:nowrap">${s.at||''}</td>
       <td class="no-print"><button class="rdl" onclick="doRestore(event,${idx})" title="元に戻す">↩</button></td>
@@ -1348,7 +1350,7 @@ function exportCSV(){
       s.oShape||s.shape, s.oSize||s.size,
       s.nShape||s.shape, s.nSize||s.size,
       s.nDetail||s.detail, purpose, stl,
-      s.editor||'', s.note||'', s.at||''
+      displayName(s.editor)||'', s.note||'', s.at||''
     ]);
   });
   const bom='\uFEFF';
@@ -1361,8 +1363,9 @@ function exportCSV(){
 }
 
 function doPrint(){
+  const creatorName=displayName(myName)||'―';
   document.getElementById('ph-dt').textContent=
-    `作成日時：${new Date().toLocaleString('ja-JP')} ／ 作成者：${myName||'―'} ／ EMZ3612M2E ／ 日建フレメックス株式会社`;
+    `作成日時：${new Date().toLocaleString('ja-JP')} ／ 作成者：${creatorName} ／ EMZ3612M2E ／ 日建フレメックス株式会社`;
   window.print();
 }
 
@@ -1370,6 +1373,10 @@ function doPrint(){
 // UTILS
 // ================================================================
 function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function displayName(name){
+  if(!name) return '';
+  return name===SHARED_NAME?'':name;
+}
 function toast(msg, t='info'){
   const el=document.getElementById('toast');
   el.textContent=msg; el.className=`toast ${t} show`;
@@ -1608,10 +1615,13 @@ window.addEventListener('storage', e=>{
 document.addEventListener('DOMContentLoaded', async ()=>{
   myName=SHARED_NAME;
   myColor=SHARED_COLOR;
+  const shownMyName=displayName(myName);
+  const myc=document.getElementById('myChip');
   const myn=document.getElementById('myName');
-  if(myn) myn.textContent=myName;
+  if(myn) myn.textContent=shownMyName||myName;
   const myd=document.getElementById('myDot');
   if(myd) myd.style.background=myColor;
+  if(myc) myc.style.display=shownMyName?'flex':'none';
   skipAutoSave=true;
   let restored=await initRemoteSync();
   if(!restored){
