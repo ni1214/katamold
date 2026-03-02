@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>金型入替シミュレーター｜日建フレメックス</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --steel:#1a2332;--steel-mid:#243447;--accent:#00d4ff;--accent2:#ff6b35;
+  --accent3:#39ff14;--warn:#ffcc00;--danger:#ff4444;--success:#00e676;
+  --text:#e8f0fe;--text-dim:#8899bb;--border:#2a3f5f;--card:#1e2d42;
+  --card-hover:#253650;--bg:#0d1a2a;
+  /* 全体のフォントサイズを少し大きくする */
+  /* Increase base font sizes for better readability */
+  --font-main:15px;
+  --font-small:13px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;
+  font-size:var(--font-main);
+  background-image:
+    radial-gradient(ellipse at 20% 20%,rgba(0,212,255,.04) 0%,transparent 60%),
+    radial-gradient(ellipse at 80% 80%,rgba(255,107,53,.04) 0%,transparent 60%),
+    repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(42,63,95,.22) 39px,rgba(42,63,95,.22) 40px),
+    repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(42,63,95,.22) 39px,rgba(42,63,95,.22) 40px)}
+
+/* ===== HEADER ===== */
+header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:2px solid var(--accent);
+  padding:10px 18px;display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 4px 28px rgba(0,212,255,.12);position:sticky;top:0;z-index:100}
+.h-left{display:flex;align-items:center;gap:10px}
+.h-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),#0088cc);
+  border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.h-title{font-size:16px;font-weight:700;color:var(--accent)}
+.h-title span{color:var(--text);font-weight:300;font-size:11px;display:block}
+.my-chip{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;
+  border:1px solid var(--border);background:var(--steel-mid);font-size:11px}
+.my-dot{width:8px;height:8px;border-radius:50%}
+.h-stats{display:flex;gap:7px}
+.schi{background:var(--steel-mid);border:1px solid var(--border);border-radius:5px;
+  padding:5px 10px;font-size:13px;color:var(--text-dim);font-family:'Share Tech Mono',monospace;text-align:center;min-width:58px}
+.schi strong{font-size:16px;display:block}
+.schi.ok strong{color:var(--success)}.schi.rep strong{color:var(--accent2)}.schi.bl strong{color:var(--accent)}
+.schi.rec strong{color:var(--warn)}
+.h-acts{display:flex;gap:6px}
+.btn{padding:8px 16px;border-radius:5px;border:1px solid var(--border);background:var(--steel-mid);
+  color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:'Noto Sans JP',sans-serif;
+  transition:all .15s;display:flex;align-items:center;gap:4px;white-space:nowrap}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{border-color:var(--accent);color:var(--accent)}
+.btn.primary:hover{background:var(--accent);color:#000;font-weight:700;box-shadow:0 0 14px rgba(0,212,255,.35)}
+.btn.ok{border-color:var(--success);color:var(--success)}
+.btn.ok:hover{background:var(--success);color:#000;font-weight:700}
+.btn.danger{border-color:var(--danger);color:var(--danger)}
+.btn.danger:hover{background:var(--danger);color:#fff}
+.btn.warn{border-color:var(--accent2);color:var(--accent2)}
+.btn.warn:hover{background:var(--accent2);color:#fff}
+.btn.on{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700}
+.ro-notice{display:none;background:rgba(255,68,68,.12);border-bottom:1px solid rgba(255,68,68,.35);
+  color:#ffb3b3;padding:8px 14px;font-size:12px;font-weight:600;letter-spacing:.02em}
+
+/* ===== LAYOUT ===== */
+.layout{display:grid;grid-template-columns:1fr;height:calc(100vh - 60px);overflow:hidden}
+
+/* ===== LEFT ===== */
+.left{display:none!important}
+.lph{padding:10px 13px 8px;border-bottom:1px solid var(--border);background:var(--steel-mid)}
+.lp-lbl{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.sr{position:relative}
+.sr input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;
+  padding:8px 12px 8px 30px;color:var(--text);font-size:13px;font-family:'Noto Sans JP',sans-serif;outline:none;font-weight:500;transition:border-color .2s}
+.sr input:focus{border-color:var(--accent)}
+.sr::before{content:'🔍';position:absolute;left:7px;top:50%;transform:translateY(-50%);font-size:10px;opacity:.5}
+.ftabs{display:flex;gap:3px;padding:6px 12px 0;flex-wrap:wrap}
+.ftab{padding:4px 10px;border-radius:3px;font-size:13px;cursor:pointer;border:1px solid var(--border);
+  background:transparent;color:var(--text-dim);transition:all .12s;font-family:'Noto Sans JP',sans-serif;font-weight:600}
+.ftab:hover{border-color:var(--accent);color:var(--accent)}
+.ftab.on{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700}
+.custom-form{padding:8px 12px;border-bottom:1px solid var(--border);background:rgba(255,107,53,.04)}
+.cf-t{font-size:12px;letter-spacing:.1em;color:var(--accent2);margin-bottom:5px;text-transform:uppercase;font-weight:600}
+.cf-r{display:flex;gap:4px;margin-bottom:4px;align-items:center}
+.cf-r label{font-size:12px;color:var(--text-dim);white-space:nowrap;min-width:36px;font-weight:500}
+.cf-r select,.cf-r input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:3px;
+  padding:6px 8px;color:var(--text);font-size:13px;font-family:'Noto Sans JP',sans-serif;outline:none}
+.cf-r select:focus,.cf-r input:focus{border-color:var(--accent2)}
+.cf-add{width:100%;padding:7px;background:var(--steel-mid);border:1px solid var(--accent2);border-radius:4px;
+  color:var(--accent2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Noto Sans JP',sans-serif;transition:all .12s}
+.cf-add:hover{background:var(--accent2);color:#fff}
+.cl{flex:1;overflow-y:auto;padding:6px}
+.cl::-webkit-scrollbar{width:3px}
+.cl::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.cc{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:7px 9px;
+  margin-bottom:4px;cursor:grab;transition:all .12s;display:flex;align-items:center;gap:7px;
+  user-select:none;position:relative;overflow:hidden}
+.cc::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:6px 0 0 6px}
+.cc.s丸::before{background:var(--accent)}.cc.s角::before{background:var(--accent2)}
+.cc.s長角::before{background:var(--accent3)}.cc.s長丸::before{background:var(--warn)}
+.cc.s特殊::before{background:#cc77ff}
+.cc.custom::before{animation:cp 1.5s infinite}
+@keyframes cp{0%,100%{background:rgba(255,107,53,.5)}50%{background:var(--accent2)}}
+.cc:hover{background:var(--card-hover);border-color:var(--accent);transform:translateX(2px);box-shadow:0 3px 10px rgba(0,212,255,.1)}
+.cc.used{opacity:.3;pointer-events:none}
+.cbg{width:24px;height:24px;border-radius:4px;background:var(--steel-mid);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.ci{flex:1;min-width:0}
+.cn{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cm_{font-size:12px;color:var(--text-dim);font-family:'Share Tech Mono',monospace;margin-top:2px}
+.cst_{font-size:11px;padding:2px 5px;border-radius:2px;background:var(--steel);border:1px solid var(--border);color:var(--text-dim);flex-shrink:0}
+.cdl{position:absolute;right:3px;top:3px;width:13px;height:13px;border-radius:2px;border:none;
+  background:rgba(255,68,68,.15);color:var(--danger);font-size:8px;cursor:pointer;display:none;align-items:center;justify-content:center}
+.cc:hover .cdl{display:flex}.cdl:hover{background:var(--danger);color:#fff}
+
+/* ===== RIGHT ===== */
+.right{height:100%;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+.right::-webkit-scrollbar{width:4px}
+.right::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.rh{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.sec-t{font-size:16px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text)}
+.sec-t span{color:var(--accent);margin-right:5px}
+.mach-l{background:linear-gradient(90deg,var(--steel-mid),var(--steel));border:1px solid var(--border);
+  border-radius:4px;padding:5px 12px;font-size:11px;font-family:'Share Tech Mono',monospace;color:var(--accent)}
+.leg{display:flex;gap:10px;flex-wrap:wrap}
+.lei{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-dim)}
+.led{width:7px;height:7px;border-radius:50%}
+.stb{background:var(--card);border:1px solid var(--border);border-radius:9px;overflow:hidden}
+.sth{background:var(--steel-mid);padding:8px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
+.stk{font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700}
+.stn{font-size:13px;font-weight:700}
+.stc{margin-left:auto;font-size:12px;color:var(--text-dim)}
+.stc span{font-weight:700}
+.slg{padding:8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:6px}
+
+/* ===== SLOT ===== */
+.slot{background:var(--steel);border:1.5px solid var(--border);border-radius:6px;padding:7px 6px;
+  /* Increase slot height to accommodate detail lines */
+  min-height:138px;position:relative;transition:all .12s;cursor:pointer}
+.slot.empty{border-style:dashed;border-color:rgba(42,63,95,.45);opacity:.5}
+.slot.keep{border-color:rgba(0,230,118,.35);background:rgba(0,230,118,.04)}
+.slot.replace{border-color:rgba(255,107,53,.5);background:rgba(255,107,53,.05)}
+.slot.new-a{border-color:rgba(0,212,255,.5);background:rgba(0,212,255,.05);animation:gl 2s ease-in-out infinite}
+@keyframes gl{0%,100%{box-shadow:0 0 5px rgba(0,212,255,.2)}50%{box-shadow:0 0 16px rgba(0,212,255,.5)}}
+.slot:hover{transform:scale(1.04);z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.slot.dov{border-color:var(--accent)!important;background:rgba(0,212,255,.1)!important;transform:scale(1.06)}
+.sdot{position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%}
+.keep .sdot{background:var(--success);box-shadow:0 0 5px var(--success)}
+.replace .sdot{background:var(--accent2);box-shadow:0 0 5px var(--accent2)}
+.new-a .sdot{background:var(--accent);box-shadow:0 0 5px var(--accent)}
+.empty .sdot{background:var(--border)}
+.s-ico{font-size:20px;text-align:center;margin:10px 0 2px;display:block}
+.s-sh{font-size:14px;font-weight:700;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s-sz{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text-dim);text-align:center;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s-dt{font-size:11px;color:var(--text-dim);text-align:center;margin-top:2px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s-no{position:absolute;bottom:5px;left:5px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--accent);opacity:.75}
+/* 担当バッジ */
+.s-editor{position:absolute;top:0;left:0;right:0;font-size:11px;font-weight:700;text-align:center;
+  padding:2px 4px;border-radius:5px 5px 0 0;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sacts{position:absolute;bottom:3px;right:3px;display:none;gap:2px}
+.slot:hover .sacts{display:flex}
+.sa{width:16px;height:16px;border-radius:3px;border:1px solid var(--border);background:var(--steel-mid);
+  cursor:pointer;font-size:8px;display:flex;align-items:center;justify-content:center;color:var(--text);transition:all .12s}
+.sa:hover{border-color:var(--accent2);background:var(--accent2);color:#fff}
+.sa.rv:hover{border-color:var(--success);background:var(--success);color:#000}
+
+/* === Slot purpose indicator === */
+.s-purpose{
+  font-size:11px;
+  color:var(--text-dim);
+  text-align:center;
+  margin-top:2px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* === Sidebar Collapse Button === */
+.fold-btn{
+  position:absolute;
+  top:8px;
+  right:8px;
+  /* Increase button size for better visibility */
+  width:28px;
+  height:28px;
+  background:var(--accent);
+  border:1px solid var(--accent);
+  border-radius:50%;
+  color:#000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:16px;
+  cursor:pointer;
+  z-index:2000;
+  transition:transform .2s;
+}
+
+.left.folded{
+  width:34px !important;
+}
+
+.left.folded .fold-btn{
+  transform:rotate(180deg);
+  background:var(--accent2);
+  border-color:var(--accent2);
+}
+
+.left.folded .lph,
+.left.folded .ftabs,
+.left.folded .custom-form,
+.left.folded .cl{
+  display:none;
+}
+
+/* ===== LOG ===== */
+.logp{background:var(--card);border:1px solid var(--border);border-radius:9px;overflow:hidden}
+.logh{background:var(--steel-mid);padding:9px 14px;display:flex;align-items:center;justify-content:space-between}
+.log-t{font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.log-acts{display:flex;gap:5px}
+.log-body{padding:10px;overflow-x:auto}
+.log-empty{text-align:center;color:var(--text-dim);font-size:12px;padding:20px;opacity:.5}
+.lt{width:100%;border-collapse:collapse;font-size:13px;min-width:1200px}
+.lt th{background:var(--steel-mid);padding:8px 12px;text-align:left;color:var(--text);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap;font-size:14px}
+.lt td{padding:7px 12px;border-bottom:1px solid rgba(42,63,95,.4);font-family:'Share Tech Mono',monospace;font-size:13px!important;vertical-align:middle;color:var(--text)!important}
+.lt tr:last-child td{border-bottom:none}
+.lt tr:hover td{background:rgba(0,212,255,.03)}
+.b-rep{color:var(--accent2)}.b-new{color:var(--accent)}
+.old{color:var(--text-dim);text-decoration:line-through;opacity:.6}
+.nw{color:var(--accent3);font-weight:700}
+.rdl{width:16px;height:16px;border-radius:3px;border:1px solid transparent;background:transparent;
+  color:var(--text-dim);font-size:8px;cursor:pointer;transition:all .12s}
+.rdl:hover{border-color:var(--danger);color:var(--danger)}
+
+/* ===== OVERLAYS ===== */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);
+  z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.ov.open{opacity:1;pointer-events:all}
+.modal{background:var(--steel-mid);border:1px solid var(--accent);border-radius:11px;padding:20px;
+  width:410px;max-width:93vw;max-height:88vh;display:flex;flex-direction:column;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);transform:translateY(-16px);transition:transform .2s;overflow:hidden}
+.ov.open .modal{transform:translateY(0)}
+.modal h3{font-size:14px;margin-bottom:3px;color:var(--accent)}
+.modal>p{font-size:10px;color:var(--text-dim);margin-bottom:12px}
+.ml{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.ml::-webkit-scrollbar{width:3px}
+.ml::-webkit-scrollbar-thumb{background:var(--border)}
+.mop{background:var(--steel);border:1px solid var(--border);border-radius:5px;padding:8px 10px;
+  cursor:pointer;transition:all .12s;display:flex;align-items:center;gap:8px}
+.mop:hover{border-color:var(--accent);background:var(--card-hover)}
+.mop.used{opacity:.3;pointer-events:none}
+.mop .mi{font-size:16px}
+.mop .mn{font-size:11px;font-weight:500}
+.mop .mm{font-size:11px;color:var(--text-dim);font-family:'Share Tech Mono',monospace}
+.m-close{width:100%;padding:8px;background:var(--steel);border:1px solid var(--border);
+  border-radius:5px;color:var(--text-dim);cursor:pointer;font-size:11px;font-family:'Noto Sans JP',sans-serif;transition:all .12s}
+.m-close:hover{border-color:var(--danger);color:var(--danger)}
+/* custom modal */
+.cm-modal{width:470px}
+.fg{margin-bottom:10px}
+.fg label{display:block;font-size:10px;color:var(--text-dim);margin-bottom:3px}
+.fg input,.fg select,.fg textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;
+  padding:7px 9px;color:var(--text);font-size:11px;font-family:'Noto Sans JP',sans-serif;outline:none;transition:border-color .2s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--accent)}
+.fg textarea{resize:none;height:55px}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .fh{font-size:11px;color:var(--text-dim);margin-top:2px;opacity:.7}
+.pv-area{background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.18);border-radius:5px;padding:9px 11px;margin-bottom:12px}
+  .pv-lbl{font-size:11px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.pv-cmp{display:grid;grid-template-columns:1fr 22px 1fr;align-items:center;gap:3px}
+  .pv-old{background:var(--steel);border-radius:4px;padding:6px 9px;font-family:'Share Tech Mono',monospace;font-size:11px;border:1px solid rgba(255,107,53,.3);color:var(--accent2)}
+  .pv-new{background:var(--steel);border-radius:4px;padding:6px 9px;font-family:'Share Tech Mono',monospace;font-size:11px;border:1px solid rgba(0,212,255,.3);color:var(--accent)}
+.pv-arr{text-align:center;color:var(--text-dim);font-size:13px}
+/* save modal */
+.sv-modal{width:500px}
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:12px}
+.tab{padding:6px 14px;font-size:10px;cursor:pointer;border:none;background:transparent;color:var(--text-dim);
+  transition:all .12s;font-family:'Noto Sans JP',sans-serif;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+.tc{display:none}.tc.on{display:block}
+.sv-in{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;
+  padding:7px 9px;color:var(--text);font-size:11px;font-family:'Noto Sans JP',sans-serif;outline:none;margin-bottom:7px}
+.sv-in:focus{border-color:var(--accent)}
+.sv-item{display:flex;align-items:center;gap:5px;padding:6px 9px;background:var(--steel);
+  border:1px solid var(--border);border-radius:5px;margin-top:4px}
+.sv-item-info{flex:1;min-width:0}
+.sv-item-name{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sv-item-date{font-size:8px;color:var(--text-dim);font-family:'Share Tech Mono',monospace}
+/* info box */
+.info-box{background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.2);border-radius:6px;
+  padding:10px 12px;font-size:10px;color:var(--text-dim);line-height:1.7;margin-bottom:10px}
+.info-box strong{color:var(--accent)}
+.warn-box{background:rgba(255,204,0,.05);border:1px solid rgba(255,204,0,.2);border-radius:6px;
+  padding:9px 12px;font-size:10px;color:var(--warn);line-height:1.6;margin-bottom:10px}
+.step{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:var(--steel);border-radius:6px;margin-bottom:6px}
+.step-n{width:20px;height:20px;border-radius:50%;background:var(--accent);color:#000;font-size:11px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-t{font-size:11px;font-weight:600;margin-bottom:2px}
+.step-d{font-size:10px;color:var(--text-dim);line-height:1.5}
+
+/* ===== TOAST ===== */
+.toast{position:fixed;bottom:18px;right:18px;background:var(--steel-mid);border:1px solid var(--accent);
+  border-radius:7px;padding:9px 14px;font-size:11px;z-index:500;transform:translateY(45px);
+  opacity:0;transition:all .28s;pointer-events:none;max-width:300px;line-height:1.5}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{border-color:var(--success);color:var(--success)}
+.toast.info{border-color:var(--accent);color:var(--accent)}
+.toast.warn{border-color:var(--warn);color:var(--warn)}
+.toast.err{border-color:var(--danger);color:var(--danger)}
+
+/* ===== PRINT ===== */
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  body{background:#0d1a2a!important;background-image:none!important}
+  .h-acts,.left,.no-print,.ov{display:none!important}
+  header{position:relative}
+  .layout{display:block!important}
+  .right{overflow:visible!important;padding:0!important;height:auto!important}
+  .ph{display:block!important;margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid #00d4ff}
+  .ph h2{font-size:16pt;color:#00d4ff;margin-bottom:3px}
+  .ph p{font-size:10pt;color:#8899bb}
+  .stb{border:1px solid #2a3f5f;background:#1e2d42;break-inside:avoid;margin-bottom:10px}
+  .sth{background:#243447}
+  .slot{background:#1a2332;break-inside:avoid;border:1px solid #2a3f5f}
+  .slot.keep{background:rgba(0,230,118,.08)!important;border-color:rgba(0,230,118,.5)!important}
+  .slot.replace{background:rgba(255,107,53,.1)!important;border-color:rgba(255,107,53,.6)!important}
+  .slot.new-a{background:rgba(0,212,255,.08)!important;border-color:rgba(0,212,255,.5)!important;animation:none!important}
+  .sacts,.rdl,.s-editor{display:none!important}
+  .logp{break-inside:avoid;margin-top:12px;border:1px solid #2a3f5f;background:#1e2d42}
+  .logh{background:#243447}
+  .lt th{background:#243447}
+
+  /* 変更: 印刷時は金型配置図を非表示にし、変更一覧テーブルを強調表示 */
+  .stb, .slot, .rh, .mach-l, .leg{display:none!important;}
+  .logp{display:block!important;width:100%!important;}
+  .lt{display:table!important;width:100%!important;border-collapse:collapse!important;}
+  .lt th, .lt td{border:1px solid #2a3f5f!important;padding:6px 8px!important;}
+  .lt th{background:#243447!important;color:var(--text)!important;font-weight:700!important;}
+  .lt td{background:#1e2d42!important;color:var(--text)!important;}
+}
+.ph{display:none}
+</style>
+</head>
+<body>
+
+<!-- メイン画面 -->
+<header>
+  <div class="h-left">
+    <div class="h-icon">⚙️</div>
+    <div>
+      <div class="h-title">金型入替シミュレーター
+        <span>日建フレメックス株式会社｜EMZ3612M2E</span>
+      </div>
+    </div>
+  </div>
+  <div class="h-stats">
+    <div class="schi bl"><strong id="sc-t">0</strong>総</div>
+    <div class="schi ok"><strong id="sc-k">0</strong>継続</div>
+    <div class="schi rep"><strong id="sc-r">0</strong>入替</div>
+    <div class="schi"><strong id="sc-e">0</strong>空き</div>
+  </div>
+  <div class="h-acts">
+    <div class="my-chip">
+      <div class="my-dot" id="myDot"></div>
+      <span id="myName">共有モード</span>
+    </div>
+    <!-- 編集モードの切替ボタン -->
+    <button class="btn warn" id="editBtn" onclick="startEditing()">✏️ 編集開始</button>
+    <button class="btn ok" id="endBtn" onclick="endEditing()" style="display:none;">✔ 編集終了</button>
+    <button class="btn ok" onclick="openSaveModal()">💾 自動保存</button>
+    <button class="btn primary" onclick="doPrint()">🖨️ 印刷・PDF</button>
+    <button class="btn danger" onclick="resetAll()">↺ リセット</button>
+  </div>
+</header>
+<div class="ro-notice" id="readOnlyNotice"></div>
+
+<div class="layout">
+  <!-- 左パネル -->
+  <div class="left no-print" id="leftPanel">
+    <div class="fold-btn" onclick="toggleSidebar()">❮</div>
+    <div class="lph">
+      <div class="lp-lbl">📦 候補金型リスト（見積書＋カスタム）</div>
+      <div class="sr"><input type="text" id="search" placeholder="形状・サイズで検索…" oninput="renderCands()"></div>
+    </div>
+    <div class="ftabs">
+      <button class="ftab on" onclick="setFilter('all',this)">すべて</button>
+      <button class="ftab" onclick="setFilter('丸',this)">丸</button>
+      <button class="ftab" onclick="setFilter('角',this)">角</button>
+      <button class="ftab" onclick="setFilter('長角',this)">長角</button>
+      <button class="ftab" onclick="setFilter('特殊',this)">特殊</button>
+    </div>
+    <div class="custom-form">
+      <div class="cf-t">✏️ 任意サイズを追加</div>
+      <div class="cf-r"><label>形状</label>
+        <select id="cf-sh"><option>丸</option><option>角</option><option>長角</option><option>長丸</option>
+        <option>バーリング</option><option>サラ</option><option>刻印</option><option>ポンチ</option><option>特型</option><option>その他</option></select></div>
+      <div class="cf-r"><label>サイズ</label><input type="text" id="cf-sz" placeholder="例: 6.5Φ / 12x8"></div>
+      <div class="cf-r"><label>詳細</label><input type="text" id="cf-dt" placeholder="例: CL=0.30"></div>
+      <div class="cf-r"><label>対応ST</label>
+        <select id="cf-st"><option value="A">A</option><option value="B">B</option>
+        <option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="G">G</option></select></div>
+      <button class="cf-add" onclick="addCustomCand()">＋ リストに追加</button>
+    </div>
+    <div class="cl" id="cl"></div>
+  </div>
+
+  <!-- 右パネル -->
+  <div class="right" id="rp">
+    <div class="ph"><h2>金型入替計画書</h2><p id="ph-dt"></p></div>
+    <div class="rh">
+      <div class="sec-t"><span>●</span>タレット ステーション配置図</div>
+      <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">
+        <div class="leg">
+          <div class="lei"><div class="led" style="background:var(--success)"></div>継続</div>
+          <div class="lei"><div class="led" style="background:var(--accent2)"></div>入替済</div>
+          <div class="lei"><div class="led" style="background:var(--accent)"></div>新規追加</div>
+        </div>
+        <div class="mach-l">EMZ3612M2E (ID金型有)</div>
+      </div>
+    </div>
+    <div id="turret"></div>
+    <!-- 変更一覧 -->
+    <div class="logp">
+      <div class="logh">
+        <div class="log-t">📋 入替変更一覧（全件）</div>
+        <div class="log-acts no-print">
+          <button class="btn" onclick="exportCSV()">📥 CSV出力</button>
+          <button class="btn primary" onclick="doPrint()">🖨️ 印刷</button>
+        </div>
+      </div>
+      <div class="log-body">
+        <div class="log-empty" id="le">まだ入替えた金型はありません。スロットをクリック、またはドラッグ＆ドロップで入替えてください。</div>
+        <table class="lt" id="lt" style="display:none">
+          <thead><tr>
+            <th>#</th><th>ステーション</th><th>スロット</th>
+            <th>元の金型</th><th></th><th>新しい金型</th>
+            <th>詳細</th><th>用途</th><th>状態</th><th>担当者</th><th>備考</th><th>日時</th>
+            <th class="no-print"></th>
+          </tr></thead>
+          <tbody id="lb"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- スロット選択モーダル -->
+<div class="ov" id="slotOv">
+  <div class="modal">
+    <h3>⚡ スロットを入替える</h3>
+    <p id="sm-sub"></p>
+    <div class="fg"><label>用途</label>
+      <input type="text" id="sm-purpose" placeholder="例: M4タップ下穴">
+    </div>
+    <div class="ml" id="sm-list"></div>
+    <button class="m-close" onclick="closeOv('slotOv')">キャンセル</button>
+  </div>
+</div>
+
+<!-- カスタムサイズ入力モーダル -->
+<div class="ov" id="cmOv">
+  <div class="modal cm-modal">
+    <h3>✏️ 任意サイズで入替える</h3>
+    <p id="cm-sub"></p>
+    <div class="pv-area" id="pv-area" style="display:none">
+      <div class="pv-lbl">変更プレビュー</div>
+      <div class="pv-cmp">
+        <div class="pv-old" id="pv-old">―</div>
+        <div class="pv-arr">→</div>
+        <div class="pv-new" id="pv-new">―</div>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>形状 *</label>
+        <select id="cm-sh" onchange="upPv()">
+          <option>丸</option><option>角</option><option>長角</option><option>長丸</option>
+          <option>バーリング</option><option>サラ</option><option>刻印</option><option>ポンチ</option><option>特型</option><option>その他</option>
+        </select></div>
+      <div class="fg"><label>サイズ *</label>
+        <input type="text" id="cm-sz" placeholder="例: 6.5Φ" oninput="upPv()">
+        <div class="fh">丸:直径Φ ／ 角・長角:AxB</div>
+      </div>
+    </div>
+    <div class="fg"><label>詳細・条件</label>
+      <input type="text" id="cm-dt" placeholder="例: CL=0.30, SKH, 上向き" oninput="upPv()"></div>
+    <!-- 用途入力欄 -->
+    <div class="fr">
+      <div class="fg"><label>用途</label>
+        <input type="text" id="cm-purpose" placeholder="例: M4タップ下穴">
+      </div>
+    </div>
+    <div class="fg"><label>備考・メモ（会議メモ、確認事項など）</label>
+      <textarea id="cm-nt" placeholder="例: 現行より0.3大きくする / 要確認"></textarea></div>
+    <button class="btn primary" style="width:100%;margin-bottom:7px;padding:9px;font-size:12px;justify-content:center"
+            onclick="applyCm()">✅ この内容で入替える</button>
+    <button class="m-close" onclick="closeOv('cmOv')">キャンセル</button>
+  </div>
+</div>
+
+<!-- 保存・共有モーダル -->
+<div class="ov" id="svOv">
+  <div class="modal sv-modal">
+    <h3>💾 自動保存</h3>
+    <p>このPCのブラウザに自動保存されます。</p>
+    <div class="tabs">
+      <button class="tab on" onclick="switchTab('auto',this)">💾 自動保存</button>
+      <button class="tab" onclick="switchTab('backup',this)">📦 バックアップ</button>
+      <button class="tab" onclick="switchTab('print',this)">🖨️ 印刷・PDF</button>
+    </div>
+
+    <!-- 自動保存タブ -->
+    <div class="tc on" id="tc-auto">
+      <div class="info-box">
+        <strong>変更は自動保存</strong>され、リロードしても消えません。<br>
+        社内ネットワークで同じURLを開けば他PCでも同じ状態を編集できます。
+      </div>
+      <div class="step">
+        <div class="step-n">1</div>
+        <div><div class="step-t">共有サーバー経由で開く</div>
+        <div class="step-d">例: <code style="background:var(--bg);padding:2px 5px;border-radius:3px;font-size:9px">http://社内PC名:8787/金型入替シミュレーター.html</code></div></div>
+      </div>
+      <div class="step">
+        <div class="step-n">2</div>
+        <div><div class="step-t">保存は自動</div>
+        <div class="step-d">操作後数秒で自動保存され、別PCの画面にも順次反映されます。</div></div>
+      </div>
+      <div class="step">
+        <div class="step-n">3</div>
+        <div><div class="step-t">必要時だけバックアップ出力</div>
+        <div class="step-d">節目でJSONを1本出力しておくと、万一の復旧に使えます。</div></div>
+      </div>
+      <div class="warn-box" id="auto-status-box">
+        自動保存状態: <span id="autoStatusText">未保存</span><br>
+        共有同期状態: <span id="syncStatusText">未接続</span>
+      </div>
+    </div>
+
+    <!-- バックアップタブ -->
+    <div class="tc" id="tc-backup">
+      <div class="info-box">
+        <strong>任意タイミングでJSONバックアップ</strong>を出力します。<br>
+        読み込み機能は使わず、復旧時はファイル差し替え運用を想定します。
+      </div>
+      <button class="btn ok" style="width:100%;justify-content:center;margin-bottom:8px;padding:10px;font-size:12px"
+              onclick="expJSON()">📥 JSONバックアップを書き出す</button>
+      <div id="sv-status" style="font-size:10px;color:var(--text-dim);min-height:18px;margin-top:8px;text-align:center"></div>
+    </div>
+
+    <!-- 印刷タブ -->
+    <div class="tc" id="tc-print">
+      <div class="info-box">
+        <strong>印刷・PDF化</strong>の方法：
+      </div>
+      <div class="step">
+        <div class="step-n">1</div>
+        <div><div class="step-t">「印刷プレビューを開く」ボタンを押す</div>
+        <div class="step-d">左パネルが非表示になり、タレット配置図と変更一覧が印刷用レイアウトで表示されます</div></div>
+      </div>
+      <div class="step">
+        <div class="step-n">2</div>
+        <div><div class="step-t">PDFにする場合</div>
+        <div class="step-d">プリンターの選択で <strong>「PDFとして保存」</strong>（Microsoft Print to PDF / Chrome PDF）を選択</div></div>
+      </div>
+      <button class="btn primary" style="width:100%;justify-content:center;padding:10px;font-size:12px;margin-top:8px"
+              onclick="closeOv('svOv');doPrint()">🖨️ 印刷プレビューを開く</button>
+    </div>
+
+    <button class="m-close" style="margin-top:12px" onclick="closeOv('svOv')">閉じる</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ================================================================
+// MASTER DATA
+// ================================================================
+const SHARED_NAME='共有モード';
+const SHARED_COLOR='#00d4ff';
+const AUTO_SAVE_KEY='moldSimulatorAutoSaveV1';
+const AUTO_SAVE_MS=700;
+const REMOTE_STATE_URL='/api/state';
+const REMOTE_POLL_MS=3000;
+const REMOTE_LOCK_URL='/api/lock';
+const REMOTE_LOCK_POLL_MS=2000;
+const REMOTE_LOCK_HEARTBEAT_MS=12000;
+const REMOTE_LOCK_TTL_MS=45000;
+const ST={
+  A:{name:'Aステーション',range:'1.6～12.7Φ',color:'#00d4ff'},
+  B:{name:'Bステーション',range:'12.8～31.7Φ',color:'#ff6b35'},
+  C:{name:'Cステーション',range:'31.8～50.8Φ',color:'#39ff14'},
+  D:{name:'Dステーション',range:'50.9～88.9Φ',color:'#ffcc00'},
+  E:{name:'Eステーション',range:'89～114.3Φ',color:'#cc77ff'},
+  G:{name:'Gステーション(インデックス)',range:'12.8～31.7Φ',color:'#ff77aa'},
+};
+const ICONS={'丸':'⬤','角':'■','長角':'▬','長丸':'⬭','バーリング':'🔩','サラ':'⊘','刻印':'✦','ポンチ':'◉','特型':'★','その他':'◈','高速マーキング':'⚡','―':'○'};
+const ic=s=>ICONS[s]||'◈';
+
+const INIT=[
+  {num:1,no:105,st:'A',shape:'丸',size:'8Φ',detail:'―'},{num:2,no:206,st:'A',shape:'長丸',size:'10x8',detail:'―'},
+  {num:3,no:307,st:'A',shape:'ポンチ',size:'―',detail:'―'},{num:4,no:109,st:'A',shape:'丸',size:'3.6Φ',detail:'―'},
+  {num:5,no:210,st:'A',shape:'丸',size:'12Φ',detail:'―'},{num:6,no:311,st:'A',shape:'角',size:'5x5',detail:'―'},
+  {num:7,no:114,st:'A',shape:'丸',size:'12.5Φ',detail:'―'},{num:8,no:215,st:'A',shape:'丸',size:'11Φ',detail:'―'},
+  {num:9,no:316,st:'A',shape:'角',size:'8x8',detail:'―'},{num:10,no:119,st:'A',shape:'丸',size:'2.2Φ',detail:'―'},
+  {num:11,no:220,st:'A',shape:'バーリング',size:'M5',detail:'突起有'},{num:12,no:321,st:'A',shape:'丸',size:'9Φ',detail:'―'},
+  {num:13,no:124,st:'A',shape:'サラ',size:'D7',detail:'―'},{num:14,no:225,st:'A',shape:'丸',size:'5.5Φ',detail:'―'},
+  {num:15,no:326,st:'A',shape:'長角',size:'3x10',detail:'Y方向'},{num:16,no:131,st:'A',shape:'丸',size:'4.5Φ',detail:'―'},
+  {num:17,no:232,st:'A',shape:'丸',size:'3.2Φ',detail:'3.3Φ使用'},{num:18,no:333,st:'A',shape:'角',size:'6x6',detail:'―'},
+  {num:19,no:135,st:'A',shape:'―',size:'―',detail:'空き'},{num:20,no:236,st:'A',shape:'丸',size:'4.2Φ',detail:'―'},
+  {num:21,no:337,st:'A',shape:'刻印',size:'―',detail:'上方向'},{num:22,no:140,st:'A',shape:'―',size:'―',detail:'空き'},
+  {num:23,no:241,st:'A',shape:'丸',size:'5.2Φ',detail:'―'},{num:24,no:342,st:'A',shape:'サラ',size:'D6',detail:'―'},
+  {num:25,no:145,st:'A',shape:'丸',size:'10Φ',detail:'―'},{num:26,no:246,st:'A',shape:'刻印',size:'―',detail:'下方向'},
+  {num:27,no:347,st:'A',shape:'丸',size:'8.3Φ',detail:'―'},{num:28,no:150,st:'A',shape:'丸',size:'7.2Φ',detail:'―'},
+  {num:29,no:251,st:'A',shape:'丸',size:'6.2Φ',detail:'―'},{num:30,no:352,st:'A',shape:'長角',size:'6.5x10',detail:'X方向'},
+  {num:31,no:0,st:'A',shape:'―',size:'―',detail:'空き'},{num:32,no:0,st:'A',shape:'―',size:'―',detail:'空き'},
+  {num:33,no:0,st:'A',shape:'―',size:'―',detail:'空き'},{num:34,no:0,st:'A',shape:'―',size:'―',detail:'空き'},
+  {num:35,no:0,st:'A',shape:'―',size:'―',detail:'空き'},{num:36,no:0,st:'A',shape:'―',size:'―',detail:'空き'},
+  {num:1,no:112,st:'B',shape:'丸',size:'15Φ',detail:'―'},{num:2,no:313,st:'B',shape:'角',size:'15x15',detail:'―'},
+  {num:3,no:117,st:'B',shape:'丸',size:'20Φ',detail:'―'},{num:4,no:318,st:'B',shape:'角',size:'20x20',detail:'―'},
+  {num:5,no:122,st:'B',shape:'サラ',size:'D10',detail:'2.3枠用'},{num:6,no:323,st:'B',shape:'サラ',size:'D10',detail:'1.6枠用'},
+  {num:7,no:138,st:'B',shape:'丸',size:'30Φ',detail:'―'},{num:8,no:339,st:'B',shape:'長角',size:'5x30',detail:'Y方向'},
+  {num:9,no:143,st:'B',shape:'丸',size:'25Φ',detail:'―'},{num:10,no:344,st:'B',shape:'長角',size:'4.4x22',detail:'X方向'},
+  {num:11,no:148,st:'B',shape:'丸',size:'14Φ',detail:'―'},{num:12,no:349,st:'B',shape:'サラ',size:'D10',detail:'1.6パネル'},
+  {num:1,no:202,st:'C',shape:'丸',size:'34Φ',detail:'―'},{num:2,no:203,st:'C',shape:'丸',size:'38Φ',detail:'―'},
+  {num:3,no:228,st:'C',shape:'角',size:'30x30',detail:'―'},{num:4,no:229,st:'C',shape:'特型',size:'―',detail:'ツボ加工'},
+  {num:1,no:208,st:'D',shape:'特型',size:'―',detail:'ベロ加工'},{num:2,no:234,st:'D',shape:'角',size:'50x50',detail:'―'},
+  {num:1,no:204,st:'E',shape:'長角',size:'110x10',detail:'X方向'},{num:2,no:230,st:'E',shape:'長角',size:'10x110',detail:'Y方向'},
+  {num:1,no:201,st:'G',shape:'角',size:'10x10',detail:'インデックス'},{num:2,no:227,st:'G',shape:'長角',size:'10x2',detail:'インデックス'},
+];
+const BASE_CANDS=[
+  {id:'c001',shape:'丸',size:'2.2Φ',detail:'CL=0.30',range:'A',no:'NEX3-001'},
+  {id:'c002',shape:'丸',size:'3.2Φ',detail:'CL=0.30',range:'A',no:'NEX3-002'},
+  {id:'c003',shape:'丸',size:'3.6Φ',detail:'CL=0.30',range:'A',no:'NEX3-003'},
+  {id:'c004',shape:'丸',size:'4.2Φ',detail:'CL=0.30',range:'A',no:'NEX3-004'},
+  {id:'c005',shape:'丸',size:'4.5Φ',detail:'CL=0.30',range:'A',no:'NEX3-005'},
+  {id:'c006',shape:'丸',size:'5.2Φ',detail:'CL=0.30',range:'A',no:'NEX3-006'},
+  {id:'c007',shape:'丸',size:'5.5Φ',detail:'CL=0.30',range:'A',no:'NEX3-007'},
+  {id:'c008',shape:'丸',size:'6.2Φ',detail:'CL=0.30',range:'A',no:'NEX3-008'},
+  {id:'c009',shape:'丸',size:'7.2Φ',detail:'CL=0.30',range:'A',no:'NEX3-009'},
+  {id:'c010',shape:'丸',size:'8.0Φ',detail:'CL=0.30',range:'A',no:'NEX3-010'},
+  {id:'c011',shape:'丸',size:'8.3Φ',detail:'CL=0.30',range:'A',no:'NEX3-011'},
+  {id:'c012',shape:'丸',size:'9.0Φ',detail:'CL=0.30',range:'A',no:'NEX3-012'},
+  {id:'c013',shape:'丸',size:'10.0Φ',detail:'CL=0.30',range:'A',no:'NEX3-013'},
+  {id:'c014',shape:'丸',size:'11.0Φ',detail:'CL=0.30',range:'A',no:'NEX3-014'},
+  {id:'c015',shape:'丸',size:'12.0Φ',detail:'CL=0.30',range:'A',no:'NEX3-015'},
+  {id:'c016',shape:'丸',size:'12.5Φ',detail:'CL=0.30',range:'A',no:'NEX3-016'},
+  {id:'c017',shape:'丸',size:'14.0Φ',detail:'Bst CL=0.30',range:'B',no:'NEX3-017'},
+  {id:'c018',shape:'丸',size:'15.0Φ',detail:'Bst CL=0.30',range:'B',no:'NEX3-018'},
+  {id:'c019',shape:'丸',size:'20.0Φ',detail:'Bst CL=0.30',range:'B',no:'NEX3-019'},
+  {id:'c020',shape:'丸',size:'25.0Φ',detail:'Bst CL=0.30',range:'B',no:'NEX3-020'},
+  {id:'c021',shape:'丸',size:'30.0Φ',detail:'Bst CL=0.30',range:'B',no:'NEX3-021'},
+  {id:'c022',shape:'丸',size:'34.0Φ',detail:'αガイド Cst',range:'C',no:'NEX3-022'},
+  {id:'c023',shape:'丸',size:'38.0Φ',detail:'αガイド Cst',range:'C',no:'NEX3-023'},
+  {id:'c024',shape:'角',size:'5x5',detail:'CL=0.30',range:'A',no:'NEX3-026'},
+  {id:'c025',shape:'角',size:'6x6',detail:'CL=0.30',range:'A',no:'NEX3-027'},
+  {id:'c026',shape:'角',size:'8x8',detail:'CL=0.30',range:'A',no:'NEX3-028'},
+  {id:'c027',shape:'角',size:'10x10',detail:'Bst CL=0.30',range:'B',no:'NEX3-029'},
+  {id:'c028',shape:'角',size:'15x15',detail:'Bst CL=0.30',range:'B',no:'NEX3-030'},
+  {id:'c029',shape:'角',size:'20x20',detail:'Bst CL=0.30',range:'B',no:'NEX3-031'},
+  {id:'c030',shape:'角',size:'30x30',detail:'αガイド Cst',range:'C',no:'NEX3-032'},
+  {id:'c031',shape:'角',size:'50x50',detail:'αガイド Dst',range:'D',no:'NEX3-034'},
+  {id:'c032',shape:'長角',size:'3x10',detail:'CL=0.30',range:'A',no:'NEX3-038'},
+  {id:'c033',shape:'長角',size:'5x30',detail:'Bst CL=0.30',range:'B',no:'NEX3-039'},
+  {id:'c034',shape:'長角',size:'4.4x22',detail:'Bst CL=0.30',range:'B',no:'NEX3-040'},
+  {id:'c035',shape:'長角',size:'6.6x10',detail:'CL=0.30',range:'A',no:'NEX3-041'},
+  {id:'c036',shape:'長角',size:'10x110',detail:'αBLD Est',range:'E',no:'NEX3-042'},
+  {id:'c037',shape:'長丸',size:'10x8',detail:'CL=0.30',range:'A',no:'NEX3-036'},
+  {id:'c038',shape:'バーリング',size:'M5',detail:'チップ式 SPC用',range:'A',no:'NEX3-046'},
+  {id:'c039',shape:'刻印',size:'上向き',detail:'1/2" SPCC-t2.3',range:'A',no:'NEX3-047'},
+  {id:'c040',shape:'刻印',size:'下向き',detail:'1/2" PBタイプ',range:'A',no:'NEX3-048'},
+  {id:'c041',shape:'サラ',size:'D7',detail:'M4 Φ7.4 t1.6',range:'A',no:'NEX3-049'},
+  {id:'c042',shape:'サラ',size:'D10',detail:'M5 Φ10.6 t1.6',range:'B',no:'NEX3-050'},
+];
+
+// ================================================================
+// STATE
+// ================================================================
+let slots, cands, used, filt='all', dragId=null, actIdx=null, cidCnt=1000;
+let autoSaveTimer=null;
+let skipAutoSave=false;
+let remoteMode=false;
+let remoteRevision=0;
+let remotePollTimer=null;
+let saveInFlight=false;
+let pendingRemoteSave=false;
+let lockPollTimer=null;
+let lockHeartbeatTimer=null;
+let lockToastKey='';
+// 共有編集ロック用セッションIDと編集モードフラグ
+let sessionId = Math.random().toString(36).substr(2, 9);
+let editing = false;
+let myName=SHARED_NAME, myColor=SHARED_COLOR;
+
+function normalizeSlotMeta(s){
+  if(s.purpose===undefined||s.purpose===null) s.purpose='';
+  if('nPurpose' in s && s.nPurpose===null) s.nPurpose='';
+  if('oPurpose' in s && s.oPurpose===null) s.oPurpose='';
+}
+
+function normalizeSlots(arr){
+  arr.forEach(s=>normalizeSlotMeta(s));
+}
+
+function initSlots(){
+  slots=JSON.parse(JSON.stringify(INIT));
+  cands=JSON.parse(JSON.stringify(BASE_CANDS));
+  used=new Set(); cidCnt=1000;
+  normalizeSlots(slots);
+}
+initSlots();
+
+// ================================================================
+// RENDER
+// ================================================================
+function renderAll(){
+  renderTurret();
+  renderCands();
+  updateStats();
+  renderLog();
+  queueAutoSave();
+}
+
+function slotStat(s){
+  if(s.shape==='―'&&!s.nShape) return 'empty';
+  if(s.nShape) return s.shape==='―'?'new-a':'replace';
+  return 'keep';
+}
+
+function renderTurret(){
+  const con=document.getElementById('turret'); con.innerHTML='';
+  ['A','B','C','D','E','G'].forEach(key=>{
+    const all=slots.filter(s=>s.st===key);
+    if(!all.length) return;
+    const ss=all;
+    if(!ss.length) return;
+    const info=ST[key];
+    const kn=all.filter(s=>slotStat(s)==='keep').length;
+    const rn=all.filter(s=>['replace','new-a'].includes(slotStat(s))).length;
+    const b=document.createElement('div'); b.className='stb';
+    b.innerHTML=`<div class="sth">
+      <div class="stk" style="color:${info.color}">${key}</div>
+      <div class="stn">${info.name}<span style="font-size:11px;color:var(--text);opacity:0.75;font-weight:400;margin-left:8px">${info.range}</span></div>
+      <div class="stc"><span style="color:${info.color}">${ss.length}/${all.length}</span>ST ｜ 継続<span style="color:var(--success)">${kn}</span> ｜ 変更<span style="color:var(--accent2)">${rn}</span></div>
+    </div><div class="slg" id="g-${key}"></div>`;
+    con.appendChild(b);
+    const g=b.querySelector(`#g-${key}`);
+    ss.forEach(s=>{
+      const st2=slotStat(s), dsh=s.nShape||s.shape, dsz=s.nSize||s.size, ddt=s.nDetail||s.detail;
+      const idx=slots.indexOf(s);
+      const el=document.createElement('div');
+      el.className=`slot ${st2}`;
+      // 担当バッジ
+      const editorBadge=s.editor
+        ?`<div class="s-editor" style="background:${s.editorColor||'var(--accent)'}22;color:${s.editorColor||'var(--accent)'}">● ${escHtml(s.editor)}</div>`:'';
+      const purp = s.nPurpose || s.purpose || '';
+      el.innerHTML=`${editorBadge}
+        <div class="sdot"></div>
+        <div class="s-ico">${ic(dsh)}</div>
+        <div class="s-sh">${dsh==='―'?'空きスロット':dsh}</div>
+        <div class="s-sz">${dsz}</div>
+        ${ddt&&ddt!=='―'?`<div class="s-dt">${ddt}</div>`:''}
+        ${purp?`<div class="s-purpose">用途: ${escHtml(purp)}</div>`:''}
+        <div class="s-no">No.${s.no||'―'} / Sl.${s.num}</div>
+        <div class="sacts">
+          <div class="sa" title="入替" onclick="openSlotOv(event,${idx})">✎</div>
+          ${st2!=='keep'&&st2!=='empty'?`<div class="sa rv" title="元に戻す" onclick="doRestore(event,${idx})">↩</div>`:''}
+        </div>`;
+      el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('dov')});
+      el.addEventListener('dragleave',()=>el.classList.remove('dov'));
+      el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('dov');const cid=e.dataTransfer.getData('text/plain');if(cid)applyC(idx,cid);});
+      el.addEventListener('click',()=>openSlotOv(null,idx));
+      g.appendChild(el);
+    });
+  });
+}
+
+function updateStats(){
+  document.getElementById('sc-t').textContent=slots.length;
+  document.getElementById('sc-k').textContent=slots.filter(s=>slotStat(s)==='keep').length;
+  document.getElementById('sc-r').textContent=slots.filter(s=>['replace','new-a'].includes(slotStat(s))).length;
+  document.getElementById('sc-e').textContent=slots.filter(s=>slotStat(s)==='empty').length;
+}
+
+function renderLog(){
+  const ch=slots.filter(s=>s.nShape);
+  const le=document.getElementById('le'), lt=document.getElementById('lt'), lb=document.getElementById('lb');
+  if(!ch.length){le.style.display='';lt.style.display='none';return;}
+  le.style.display='none'; lt.style.display='';
+  let n=0;
+  lb.innerHTML=ch.map(s=>{
+    n++;
+    const st2=slotStat(s);
+    const badge=st2==='replace'?'<span class="b-rep">🔄 入替</span>':'<span class="b-new">✨ 新規</span>';
+    const idx=slots.indexOf(s);
+    const purp = s.nPurpose || s.purpose || '';
+    return `<tr>
+      <td style="color:var(--text-dim)">${n}</td>
+      <td style="font-size:9px">${ST[s.st].name}</td>
+      <td style="color:var(--accent);font-size:9px">No.${s.no}/Sl.${s.num}</td>
+      <td><span class="old">${s.oShape||'空き'} ${s.oSize||''}</span></td>
+      <td style="color:var(--text-dim)">→</td>
+      <td><span class="nw">${s.nShape} ${s.nSize}</span></td>
+      <td style="font-size:9px;color:var(--text-dim)">${escHtml(s.nDetail||'')}</td>
+      <td style="font-size:9px;color:var(--text-dim)">${escHtml(purp)}</td>
+      <td>${badge}</td>
+      <td style="font-size:9px;color:${s.editorColor||'var(--text-dim)'}">● ${s.editor||'―'}</td>
+      <td style="font-size:9px;color:var(--text-dim);max-width:120px">${escHtml(s.note||'')}</td>
+      <td style="font-size:8px;color:var(--text-dim);white-space:nowrap">${s.at||''}</td>
+      <td class="no-print"><button class="rdl" onclick="doRestore(event,${idx})" title="元に戻す">↩</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderCands(){
+  const q=document.getElementById('search').value.toLowerCase();
+  const el=document.getElementById('cl'); el.innerHTML='';
+  const f=cands.filter(c=>{
+    if(filt==='特殊'&&['丸','角','長角','長丸'].includes(c.shape)) return false;
+    if(filt!=='all'&&filt!=='特殊'&&c.shape!==filt) return false;
+    if(q&&!c.shape.includes(q)&&!c.size.toLowerCase().includes(q)&&!(c.detail||'').includes(q)) return false;
+    return true;
+  });
+  if(!f.length){el.innerHTML='<div style="text-align:center;color:var(--text-dim);font-size:10px;padding:18px;opacity:.5">該当なし</div>';return;}
+  f.forEach(c=>{
+    const isU=used.has(c.id), isCu=c.id.startsWith('cu-');
+    const d=document.createElement('div');
+    d.className=`cc s${['丸','角','長角','長丸'].includes(c.shape)?c.shape:'特殊'} ${isCu?'custom':''} ${isU?'used':''}`;
+    d.draggable=!isU; d.dataset.id=c.id;
+    d.innerHTML=`<div class="cbg">${ic(c.shape)}</div>
+      <div class="ci">
+        <div class="cn">${c.shape} ${c.size}${isCu?' <span style="font-size:7px;color:var(--accent2);border:1px solid;border-radius:2px;padding:0 2px">カスタム</span>':''}</div>
+        <div class="cm_">${c.no}｜${c.detail||''}</div>
+      </div>
+      <div class="cst_">${c.range}</div>
+      ${isCu?`<button class="cdl" onclick="delCand(event,'${c.id}')">✕</button>`:''}`;
+    d.addEventListener('dragstart',e=>{dragId=c.id;d.style.opacity='.35';e.dataTransfer.setData('text/plain',c.id);});
+    d.addEventListener('dragend',()=>{d.style.opacity='';dragId=null;});
+    d.addEventListener('click',()=>{if(!isU)openCandModal(c.id);});
+    el.appendChild(d);
+  });
+}
+
+function setFilter(f,el){
+  filt=f;
+  document.querySelectorAll('.ftab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  renderCands();
+}
+
+function addCustomCand(){
+  // 編集モードでなければ追加できません
+  if(!editing){ toast('現在他のユーザーが編集中です。読み取り専用です','warn'); return; }
+  const sh=document.getElementById('cf-sh').value, sz=document.getElementById('cf-sz').value.trim();
+  const dt=document.getElementById('cf-dt').value.trim(), st=document.getElementById('cf-st').value;
+  if(!sz){toast('サイズを入力してください','warn');return;}
+  cands.unshift({id:'cu-'+(cidCnt++),shape:sh,size:sz,detail:dt||'カスタム',range:st,no:'CUSTOM'});
+  document.getElementById('cf-sz').value=''; document.getElementById('cf-dt').value='';
+  renderCands(); toast(`✅ ${sh} ${sz} をリストに追加しました`,'ok');
+}
+
+function delCand(e,id){
+  e.stopPropagation();
+  if(!editing){ toast('現在他のユーザーが編集中です。読み取り専用です','warn'); return; }
+  cands=cands.filter(c=>c.id!==id);
+  renderCands();
+}
+
+// ================================================================
+// SLOT OPERATIONS
+// ================================================================
+function applyC(idx, cid, note='', purpose=undefined){
+  // 編集モードでなければ変更できません
+  if(!editing){ toast('現在他のユーザーが編集中です。読み取り専用です','warn'); return; }
+  const c=cands.find(x=>x.id===cid); if(!c) return;
+  const s=slots[idx];
+  if(s.prevCid) used.delete(s.prevCid);
+  if(!s.oShape){s.oShape=s.shape;s.oSize=s.size;s.oDetail=s.detail;}
+  s.nShape=c.shape; s.nSize=c.size; s.nDetail=c.detail;
+  s.nNo=c.no; s.prevCid=c.id; s.note=note;
+  const prevPurpose=s.nPurpose||s.purpose||'';
+  const nextPurpose=(purpose===undefined)?prevPurpose:(purpose||'');
+  if(!('oPurpose' in s)){
+    s.oPurpose = s.purpose || '';
+  }
+  s.purpose = nextPurpose;
+  s.nPurpose = nextPurpose;
+  s.editor=myName; s.editorColor=myColor;
+  s.at=new Date().toLocaleString('ja-JP');
+  used.add(c.id);
+  renderAll();
+  toast(`✅ スロット${s.num}：${s.oShape} → ${c.shape} ${c.size}`,'ok');
+}
+
+function applyFree(idx,sh,sz,dt,note,purpose=undefined){
+  // 編集モードでなければ変更できません
+  if(!editing){ toast('現在他のユーザーが編集中です。読み取り専用です','warn'); return; }
+  const s=slots[idx];
+  if(s.prevCid) used.delete(s.prevCid);
+  if(!s.oShape){s.oShape=s.shape;s.oSize=s.size;s.oDetail=s.detail;}
+  s.nShape=sh; s.nSize=sz; s.nDetail=dt||'';
+  s.nNo='CUSTOM'; s.prevCid=null; s.note=note||'';
+  const prevPurpose=s.nPurpose||s.purpose||'';
+  const nextPurpose=(purpose===undefined)?prevPurpose:(purpose||'');
+  if(!('oPurpose' in s)){
+    s.oPurpose = s.purpose || '';
+  }
+  s.purpose = nextPurpose;
+  s.nPurpose = nextPurpose;
+  s.editor=myName; s.editorColor=myColor;
+  s.at=new Date().toLocaleString('ja-JP');
+  renderAll();
+  toast(`✅ スロット${s.num}：${s.oShape} → ${sh} ${sz}`,'ok');
+}
+
+function doRestore(e,idx){
+  if(!editing){ toast('現在他のユーザーが編集中です。読み取り専用です','warn'); return; }
+  e.stopPropagation();
+  const s=slots[idx];
+  if(s.prevCid) used.delete(s.prevCid);
+  s.shape=s.oShape||s.shape; s.size=s.oSize||s.size; s.detail=s.oDetail||s.detail;
+  // Restore purpose
+  if(s.oPurpose!==undefined){ s.purpose = s.oPurpose; delete s.oPurpose; } else if(!s.purpose){ s.purpose=''; }
+  ['nShape','nSize','nDetail','oShape','oSize','oDetail','nNo','prevCid','note','at','editor','editorColor','nFreq','nPurpose','nUsageCount','nLastUsed','oFreq','oPurpose','oUsageCount','oLastUsed'].forEach(k=>{ try{ delete s[k]; }catch(e){} });
+  renderAll();
+  toast('↩ 元の金型に戻しました','info');
+}
+
+function resetAll(){
+  if(!editing){ toast('現在他のユーザーが編集中です。読み取り専用です','warn'); return; }
+  if(!confirm('全変更をリセットしますか？')) return;
+  initSlots(); renderAll();
+  toast('↺ リセットしました','info');
+}
+
+// ================================================================
+// MODALS
+// ================================================================
+function openSlotOv(e,idx){
+  if(e) e.stopPropagation();
+  actIdx=idx;
+  const s=slots[idx], dsh=s.nShape||s.shape, dsz=s.nSize||s.size;
+  document.getElementById('sm-sub').textContent=`${ST[s.st].name} スロット${s.num} — 現在: ${dsh} ${dsz}`;
+  const ml=document.getElementById('sm-list'); ml.innerHTML='';
+  // Set default purpose input
+  const smp=document.getElementById('sm-purpose');
+  if(smp) smp.value = (s.nPurpose || s.purpose || '');
+  // カスタム入力ボタン
+  const cb=document.createElement('div'); cb.className='mop'; cb.style.border='1px solid var(--accent2)';
+  cb.innerHTML=`<div class="mi">✏️</div><div><div class="mn" style="color:var(--accent2)">任意サイズを直接入力する</div><div class="mm">リストにない金型も指定できます</div></div>`;
+  cb.addEventListener('click',()=>{closeOv('slotOv');openCmOv(idx);}); ml.appendChild(cb);
+  const sep=document.createElement('div');
+  sep.style.cssText='font-size:8px;color:var(--text-dim);padding:5px 0 2px;opacity:.5;letter-spacing:.1em;text-transform:uppercase';
+  sep.textContent='— 候補リストから選択 —'; ml.appendChild(sep);
+  // ステーション一致を先に表示
+  [...cands.filter(c=>c.range===s.st),...cands.filter(c=>c.range!==s.st)].forEach(c=>{
+    const isU=used.has(c.id)&&c.id!==s.prevCid;
+    const d=document.createElement('div'); d.className=`mop ${isU?'used':''}`;
+    d.innerHTML=`<div class="mi">${ic(c.shape)}</div>
+      <div style="flex:1"><div class="mn">${c.shape} ${c.size}</div><div class="mm">${c.no}｜${c.detail}</div></div>
+      <div class="cst_">${c.range}</div>`;
+    d.addEventListener('click',()=>{
+      if(!isU){
+        const p=document.getElementById('sm-purpose')?document.getElementById('sm-purpose').value.trim():'';
+        applyC(idx,c.id,'',p);
+        closeOv('slotOv');
+      }
+    });
+    ml.appendChild(d);
+  });
+  document.getElementById('slotOv').classList.add('open');
+}
+
+function openCandModal(cid){
+  const c=cands.find(x=>x.id===cid); if(!c) return;
+  document.getElementById('sm-sub').textContent=`「${c.shape} ${c.size}」を設置するスロットを選択`;
+  const ml=document.getElementById('sm-list'); ml.innerHTML='';
+  slots.forEach((s,idx)=>{
+    const d=document.createElement('div'); d.className='mop';
+    d.innerHTML=`<div class="mi">${ic(s.nShape||s.shape)}</div>
+      <div style="flex:1"><div class="mn">${ST[s.st].name} スロット${s.num}</div>
+      <div class="mm">現在: ${s.nShape||s.shape} ${s.nSize||s.size} ｜ No.${s.no}</div></div>
+      <div class="cst_">${s.st}</div>`;
+    d.addEventListener('click',()=>{applyC(idx,cid);closeOv('slotOv');});
+    ml.appendChild(d);
+  });
+  document.getElementById('slotOv').classList.add('open');
+}
+
+function openCmOv(idx){
+  actIdx=idx; const s=slots[idx];
+  document.getElementById('cm-sub').textContent=`${ST[s.st].name} スロット${s.num} — 現在: ${s.nShape||s.shape} ${s.nSize||s.size}`;
+  document.getElementById('cm-sh').value=s.nShape||s.shape||'丸';
+  document.getElementById('cm-sz').value='';
+  document.getElementById('cm-dt').value='';
+  document.getElementById('cm-nt').value='';
+  // Set current purpose on custom modal
+  const cmp=document.getElementById('cm-purpose');
+  if(cmp) cmp.value = (s.nPurpose || s.purpose || '');
+  upPv();
+  document.getElementById('cmOv').classList.add('open');
+}
+
+function upPv(){
+  if(actIdx===null||actIdx===undefined) return;
+  const s=slots[actIdx];
+  const sh=document.getElementById('cm-sh').value, sz=document.getElementById('cm-sz').value||'―';
+  const dt=document.getElementById('cm-dt').value;
+  document.getElementById('pv-area').style.display='block';
+  document.getElementById('pv-old').textContent=`${s.nShape||s.shape} ／ ${s.nSize||s.size}`;
+  document.getElementById('pv-new').textContent=`${sh} ／ ${sz}${dt?' ／ '+dt:''}`;
+}
+
+function applyCm(){
+  const sh=document.getElementById('cm-sh').value;
+  const sz=document.getElementById('cm-sz').value.trim();
+  const dt=document.getElementById('cm-dt').value.trim();
+  const nt=document.getElementById('cm-nt').value.trim();
+  const purpose=document.getElementById('cm-purpose').value.trim();
+  if(!sz){toast('サイズを入力してください','warn');return;}
+  applyFree(actIdx,sh,sz,dt,nt,purpose);
+  closeOv('cmOv');
+}
+
+function saveSlotPurposeOnly(){
+  if(actIdx===null||actIdx===undefined) return;
+  if(!editing){ toast('現在他のユーザーが編集中です。読み取り専用です','warn'); return; }
+  const s=slots[actIdx];
+  if(!s) return;
+  const p=document.getElementById('sm-purpose')?document.getElementById('sm-purpose').value.trim():'';
+  if(!('oPurpose' in s)) s.oPurpose=s.purpose||'';
+  s.purpose=p;
+  s.nPurpose=p;
+  s.editor=myName; s.editorColor=myColor;
+  s.at=new Date().toLocaleString('ja-JP');
+  renderAll();
+  closeOv('slotOv');
+  toast('✅ 用途を保存しました','ok');
+}
+
+function closeOv(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); }));
+
+// Enter in purpose fields should confirm and save.
+(() => {
+  // Attach once DOM is ready
+  function attachEnterHandler(id){
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){
+        e.preventDefault();
+        e.stopPropagation();
+        if(id==='sm-purpose'){
+          saveSlotPurposeOnly();
+        }else if(id==='cm-purpose'){
+          applyCm();
+        }
+      }
+    });
+  }
+  // Wait a tick to ensure modals are in DOM
+  setTimeout(()=>{
+    attachEnterHandler('sm-purpose');
+    attachEnterHandler('cm-purpose');
+  },0);
+})();
+
+// ================================================================
+// SAVE / AUTO SAVE / EXPORT
+// ================================================================
+function buildStateObject(){
+  return {
+    slots, cands, used:[...used], cidCnt,
+    at: new Date().toISOString(),
+    savedBy: SHARED_NAME,
+    version: 5
+  };
+}
+
+function buildPayload(){
+  return JSON.stringify(buildStateObject(), null, 2);
+}
+
+function applyPayload(d){
+  if(!d||!d.slots) throw new Error('invalid');
+  slots=d.slots;
+  normalizeSlots(slots);
+  cands=d.cands||JSON.parse(JSON.stringify(BASE_CANDS));
+  used=new Set(d.used||[]);
+  cidCnt=d.cidCnt||1000;
+}
+
+function updateAutoStatus(at){
+  const el=document.getElementById('autoStatusText');
+  if(!el) return;
+  if(!at){ el.textContent='未保存'; return; }
+  let text='未保存';
+  try{
+    const d=(at instanceof Date)?at:new Date(at);
+    if(!Number.isNaN(d.getTime())) text=`最終保存: ${d.toLocaleString('ja-JP')}`;
+  }catch(e){}
+  el.textContent=text;
+}
+
+function updateSyncStatus(text){
+  const el=document.getElementById('syncStatusText');
+  if(!el) return;
+  el.textContent=text||'未接続';
+}
+
+function isRemoteCapable(){
+  return location.protocol==='http:'||location.protocol==='https:';
+}
+
+async function fetchRemoteState(){
+  const res=await fetch(`${REMOTE_STATE_URL}?_=${Date.now()}`,{cache:'no-store'});
+  if(!res.ok) throw new Error(`remote_get_${res.status}`);
+  return res.json();
+}
+
+function saveLocalNow(){
+  try{
+    const payload=buildPayload();
+    localStorage.setItem(AUTO_SAVE_KEY,payload);
+    const d=JSON.parse(payload);
+    updateAutoStatus(d.at||new Date().toISOString());
+    updateSyncStatus('ローカル保存モード');
+  }catch(e){
+    updateAutoStatus(null);
+  }
+}
+
+function startRemotePolling(){
+  if(remotePollTimer) clearInterval(remotePollTimer);
+  remotePollTimer=setInterval(()=>{ void pollRemoteState(true); }, REMOTE_POLL_MS);
+}
+
+async function pollRemoteState(showToast){
+  if(!remoteMode||saveInFlight) return false;
+  try{
+    const d=await fetchRemoteState();
+    const rev=Number(d.revision||0);
+    if(rev<=remoteRevision) return false;
+    if(d.payload&&d.payload.slots){
+      remoteRevision=rev;
+      const prev=skipAutoSave;
+      skipAutoSave=true;
+      applyPayload(d.payload);
+      renderAll();
+      skipAutoSave=prev;
+      updateAutoStatus(d.at||d.payload.at||null);
+      updateSyncStatus(`共有同期中 (rev ${remoteRevision})`);
+      if(showToast) toast('🌐 他PCの変更を反映しました','info');
+      return true;
+    }
+  }catch(e){
+    updateSyncStatus('共有接続エラー（ローカル継続）');
+  }
+  return false;
+}
+
+async function saveRemoteNow(){
+  if(!remoteMode){ saveLocalNow(); return; }
+  if(saveInFlight){ pendingRemoteSave=true; return; }
+  saveInFlight=true;
+  const payloadObj=buildStateObject();
+  const writeOnce=async(baseRevision)=>fetch(REMOTE_STATE_URL,{
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({baseRevision,payload:payloadObj})
+  });
+  try{
+    let res=await writeOnce(remoteRevision);
+    if(res.status===409){
+      const c=await res.json();
+      remoteRevision=Number(c.revision||remoteRevision);
+      // 競合時は最新Revisionで再保存（後勝ち）
+      res=await writeOnce(remoteRevision);
+    }
+    if(!res.ok) throw new Error(`remote_put_${res.status}`);
+    const out=await res.json();
+    remoteRevision=Number(out.revision||remoteRevision);
+    updateAutoStatus(out.at||payloadObj.at||new Date().toISOString());
+    updateSyncStatus(`共有同期中 (rev ${remoteRevision})`);
+  }catch(e){
+    remoteMode=false;
+    updateSyncStatus('共有保存失敗（ローカルへ切替）');
+    saveLocalNow();
+  }finally{
+    saveInFlight=false;
+    if(pendingRemoteSave){
+      pendingRemoteSave=false;
+      queueAutoSave();
+    }
+  }
+}
+
+function saveAutoNow(){
+  if(skipAutoSave) return;
+  if(remoteMode){ void saveRemoteNow(); return; }
+  saveLocalNow();
+}
+
+function queueAutoSave(){
+  if(skipAutoSave) return;
+  if(autoSaveTimer) clearTimeout(autoSaveTimer);
+  autoSaveTimer=setTimeout(saveAutoNow,AUTO_SAVE_MS);
+}
+
+function restoreAutoSave(){
+  try{
+    const raw=localStorage.getItem(AUTO_SAVE_KEY);
+    if(!raw) return false;
+    const d=JSON.parse(raw);
+    applyPayload(d);
+    updateAutoStatus(d.at||null);
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+
+async function initRemoteSync(){
+  if(!isRemoteCapable()){
+    updateSyncStatus('ローカル保存モード');
+    return false;
+  }
+  try{
+    const d=await fetchRemoteState();
+    remoteMode=true;
+    remoteRevision=Number(d.revision||0);
+    updateSyncStatus(`共有同期中 (rev ${remoteRevision})`);
+    startRemotePolling();
+    if(d.payload&&d.payload.slots){
+      applyPayload(d.payload);
+      updateAutoStatus(d.at||d.payload.at||null);
+      return true;
+    }
+  }catch(e){
+    remoteMode=false;
+    updateSyncStatus('共有未接続（ローカル保存）');
+  }
+  return false;
+}
+
+function openSaveModal(){
+  if(remoteMode){
+    void pollRemoteState(false);
+  }else{
+    try{
+      const raw=localStorage.getItem(AUTO_SAVE_KEY);
+      if(raw){
+        const d=JSON.parse(raw);
+        updateAutoStatus(d.at||null);
+      }
+    }catch(e){}
+  }
+  document.getElementById('svOv').classList.add('open');
+}
+
+function switchTab(name, el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.tc').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('tc-'+name).classList.add('on');
+}
+
+function setSvSt(msg, color='var(--success)'){
+  const el=document.getElementById('sv-status');
+  el.textContent=msg; el.style.color=color;
+  setTimeout(()=>el.textContent='', 4000);
+}
+
+function expJSON(){
+  const payload=buildPayload();
+  const fname=`金型入替計画_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'')}_backup.json`;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([payload],{type:'application/json;charset=utf-8'}));
+  a.download=fname; a.click();
+  setSvSt(`✅ 「${fname}」を保存しました`);
+  toast('📥 JSONバックアップを書き出しました。','ok');
+}
+
+// ================================================================
+// CSV / PRINT
+// ================================================================
+function exportCSV(){
+  const rows=[['#','ステーション','金型No','スロット','元形状','元サイズ','新形状','新サイズ','詳細','用途','状態','担当者','備考','変更日時']];
+  let n=0;
+  slots.forEach(s=>{
+    const st2=slotStat(s), stl=st2==='keep'?'継続':st2==='replace'?'入替':st2==='new-a'?'新規追加':'空き';
+    const purpose=s.nPurpose||s.purpose||'';
+    if(st2==='replace'||st2==='new-a') n++;
+    rows.push([
+      st2==='replace'||st2==='new-a'?n:'',
+      ST[s.st].name, s.no, s.num,
+      s.oShape||s.shape, s.oSize||s.size,
+      s.nShape||s.shape, s.nSize||s.size,
+      s.nDetail||s.detail, purpose, stl,
+      s.editor||'', s.note||'', s.at||''
+    ]);
+  });
+  const bom='\uFEFF';
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([bom+csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`金型入替計画_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'')}.csv`;
+  a.click();
+  toast('📥 CSVを出力しました','ok');
+}
+
+function doPrint(){
+  document.getElementById('ph-dt').textContent=
+    `作成日時：${new Date().toLocaleString('ja-JP')} ／ 作成者：${myName||'―'} ／ EMZ3612M2E ／ 日建フレメックス株式会社`;
+  window.print();
+}
+
+// ================================================================
+// UTILS
+// ================================================================
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function toast(msg, t='info'){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className=`toast ${t} show`;
+  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'), 3200);
+}
+
+// ================================================================
+// EDITING LOCK / STARTUP
+// ================================================================
+function getOwnerLabel(ownerId){
+  return `端末-${String(ownerId||'').slice(-4)}`;
+}
+
+function setReadonlyNotice(lock){
+  const el=document.getElementById('readOnlyNotice');
+  if(!el) return;
+  if(lock&&lock.ownerId&&lock.ownerId!==sessionId){
+    const nm=lock.ownerName||getOwnerLabel(lock.ownerId);
+    el.textContent=`✋ ${nm} が編集中です。現在は読み取り専用です。`;
+    el.style.display='block';
+  }else{
+    el.style.display='none';
+    el.textContent='';
+  }
+}
+
+function applyEditUi(lock){
+  const eb=document.getElementById('editBtn');
+  const endb=document.getElementById('endBtn');
+  if(!lock){
+    editing=false;
+    if(eb) eb.style.display='';
+    if(endb) endb.style.display='none';
+    setReadonlyNotice(null);
+    return;
+  }
+  if(lock.ownerId===sessionId){
+    editing=true;
+    if(eb) eb.style.display='none';
+    if(endb) endb.style.display='';
+    setReadonlyNotice(null);
+    return;
+  }
+  editing=false;
+  if(eb) eb.style.display='none';
+  if(endb) endb.style.display='none';
+  setReadonlyNotice(lock);
+}
+
+function showLockToast(lock){
+  if(!lock||!lock.ownerId||lock.ownerId===sessionId) return;
+  const key=`${lock.ownerId}:${lock.expiresAt||''}`;
+  if(lockToastKey===key) return;
+  lockToastKey=key;
+  const nm=lock.ownerName||getOwnerLabel(lock.ownerId);
+  toast(`${nm} が編集中です。読み取り専用で表示します。`,'warn');
+}
+
+async function fetchRemoteLock(){
+  const res=await fetch(`${REMOTE_LOCK_URL}?_=${Date.now()}`,{cache:'no-store'});
+  if(!res.ok) throw new Error(`lock_get_${res.status}`);
+  const out=await res.json();
+  return out.lock||null;
+}
+
+function clearLockHeartbeat(){
+  if(lockHeartbeatTimer){
+    clearInterval(lockHeartbeatTimer);
+    lockHeartbeatTimer=null;
+  }
+}
+
+function startLockHeartbeat(){
+  clearLockHeartbeat();
+  lockHeartbeatTimer=setInterval(()=>{ if(editing) void acquireEditingLock(false); }, REMOTE_LOCK_HEARTBEAT_MS);
+}
+
+function startLockPolling(){
+  if(lockPollTimer) clearInterval(lockPollTimer);
+  lockPollTimer=setInterval(()=>{ void checkEditing(); }, REMOTE_LOCK_POLL_MS);
+}
+
+async function acquireEditingLock(showToast){
+  if(!remoteMode){
+    localStorage.setItem('editLock', sessionId);
+    editing=true;
+    void checkEditing();
+    if(showToast) toast('🔓 編集モードになりました','ok');
+    return true;
+  }
+  try{
+    const res=await fetch(REMOTE_LOCK_URL,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        ownerId:sessionId,
+        ownerName:getOwnerLabel(sessionId),
+        ttlMs:REMOTE_LOCK_TTL_MS
+      })
+    });
+    const out=await res.json();
+    if(res.status===409){
+      applyEditUi(out.lock||null);
+      showLockToast(out.lock||null);
+      if(showToast) toast('他の端末が編集中です。読み取り専用です。','warn');
+      return false;
+    }
+    if(!res.ok) throw new Error(`lock_put_${res.status}`);
+    applyEditUi(out.lock||null);
+    if(showToast) toast('🔓 編集モードになりました','ok');
+    return true;
+  }catch(err){
+    if(showToast) toast('編集ロックに接続できませんでした','err');
+    return false;
+  }
+}
+
+async function releaseEditingLock(showToast){
+  if(!remoteMode){
+    if(localStorage.getItem('editLock')===sessionId){
+      localStorage.removeItem('editLock');
+      editing=false;
+      void checkEditing();
+      if(showToast) toast('✅ 編集を終了しました','info');
+    }
+    return;
+  }
+  clearLockHeartbeat();
+  try{
+    const res=await fetch(`${REMOTE_LOCK_URL}?ownerId=${encodeURIComponent(sessionId)}`,{method:'DELETE'});
+    const out=await res.json();
+    applyEditUi(out.lock||null);
+    if(showToast) toast('✅ 編集を終了しました','info');
+  }catch(err){
+    editing=false;
+    applyEditUi(null);
+    if(showToast) toast('編集終了の通信に失敗しました','err');
+  }
+}
+
+// 編集ロック状態を確認し、ボタンやモードを切り替える
+async function checkEditing(){
+  if(!remoteMode){
+    const lock=localStorage.getItem('editLock');
+    if(!lock){
+      applyEditUi(null);
+    }else if(lock===sessionId){
+      applyEditUi({ownerId:sessionId,ownerName:getOwnerLabel(sessionId)});
+    }else{
+      applyEditUi({ownerId:lock,ownerName:getOwnerLabel(lock)});
+    }
+    return;
+  }
+  try{
+    const lock=await fetchRemoteLock();
+    applyEditUi(lock);
+    showLockToast(lock);
+  }catch(err){
+    applyEditUi(null);
+  }
+}
+
+async function startEditing(){
+  const ok=await acquireEditingLock(true);
+  if(ok&&remoteMode) startLockHeartbeat();
+}
+
+async function endEditing(){
+  await releaseEditingLock(true);
+}
+
+function releaseLockOnLeave(){
+  if(!editing) return;
+  if(!remoteMode){
+    try{
+      if(localStorage.getItem('editLock')===sessionId){
+        localStorage.removeItem('editLock');
+      }
+    }catch(err){}
+    return;
+  }
+  const url=`/api/lock/release?ownerId=${encodeURIComponent(sessionId)}`;
+  try{
+    if(navigator.sendBeacon){
+      const blob=new Blob(['{}'],{type:'application/json'});
+      navigator.sendBeacon(url, blob);
+    }else{
+      fetch(url,{
+        method:'POST',
+        keepalive:true,
+        headers:{'Content-Type':'application/json'},
+        body:'{}'
+      });
+    }
+  }catch(err){}
+}
+
+window.addEventListener('beforeunload', releaseLockOnLeave);
+window.addEventListener('pagehide', releaseLockOnLeave);
+
+// サイドバーを折り畳む／展開する
+function toggleSidebar(){
+  const left=document.getElementById('leftPanel')||document.querySelector('.left');
+  const layout=document.querySelector('.layout');
+  const btn=left.querySelector('.fold-btn');
+  if(left.classList.contains('folded')){
+    left.classList.remove('folded');
+    if(layout) layout.style.gridTemplateColumns='290px 1fr';
+    if(btn) btn.textContent='❮';
+  }else{
+    left.classList.add('folded');
+    if(layout) layout.style.gridTemplateColumns='34px 1fr';
+    if(btn) btn.textContent='❯';
+  }
+}
+
+// 他タブで編集状況が変わったときに更新する
+window.addEventListener('storage', e=>{
+  if(e.key==='editLock') void checkEditing();
+  if(e.key===AUTO_SAVE_KEY&&e.newValue){
+    try{
+      const d=JSON.parse(e.newValue);
+      updateAutoStatus(d.at||null);
+      if(!remoteMode) updateSyncStatus('ローカル保存モード');
+    }catch(err){}
+  }
+});
+
+// ページ読み込み時に初期表示と編集状態確認を行う
+document.addEventListener('DOMContentLoaded', async ()=>{
+  myName=SHARED_NAME;
+  myColor=SHARED_COLOR;
+  const myn=document.getElementById('myName');
+  if(myn) myn.textContent=myName;
+  const myd=document.getElementById('myDot');
+  if(myd) myd.style.background=myColor;
+  skipAutoSave=true;
+  let restored=await initRemoteSync();
+  if(!restored){
+    restored=restoreAutoSave();
+    if(!restored) updateAutoStatus(null);
+  }
+  skipAutoSave=false;
+  // 初期描画
+  renderAll();
+  if(restored){
+    toast(remoteMode?'🌐 共有状態を復元しました':'💾 自動保存データを復元しました','info');
+  }
+  // 編集状態確認（定期ポーリング開始）
+  startLockPolling();
+  await checkEditing();
+});
+</script>
+</body>
+</html>
