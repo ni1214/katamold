@@ -357,11 +357,11 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
   .h-title{color:#111!important;font-size:14pt!important}
   .h-title span{color:#444!important;font-size:9pt!important}
   .layout{display:block!important;height:auto!important}
-  .right{overflow:visible!important;padding:0!important;height:auto!important;gap:0!important}
+  .right{display:block!important;overflow:visible!important;padding:0!important;height:auto!important;gap:0!important}
   .ph{display:block!important;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #333}
   .ph h2{font-size:13pt;color:#111;margin-bottom:2px}
   .ph p{font-size:9pt;color:#333}
-  .print-only,.print-sheet{display:block!important}
+  .print-only,.print-sheet,#printSheet{display:block!important}
   .pl-box{break-inside:avoid;page-break-inside:avoid}
   .pl-table th{background:#2f6f60!important;color:#fff!important}
   .pl-table td{background:#fff!important;color:#111!important}
@@ -937,12 +937,7 @@ function renderAll(){
   queueAutoSave();
 }
 
-function renderPrintTables(){
-  const allBody=document.getElementById('plAllBody');
-  const repBody=document.getElementById('plRepBody');
-  const repEmpty=document.getElementById('plRepEmpty');
-  const repTable=document.getElementById('plRepTable');
-  if(!allBody||!repBody||!repEmpty||!repTable) return;
+function buildPrintRows(){
   const order=['A','B','C','D','E','G'];
   const sorted=[...slots].sort((a,b)=>{
     const so=order.indexOf(a.st)-order.indexOf(b.st);
@@ -951,7 +946,7 @@ function renderPrintTables(){
   });
 
   let idx=0;
-  allBody.innerHTML=sorted.map(s=>{
+  const allRows=sorted.map(s=>{
     idx++;
     const st2=slotStat(s);
     const shape=s.nShape||s.shape||'―';
@@ -975,16 +970,8 @@ function renderPrintTables(){
   }).join('');
 
   const changed=sorted.filter(s=>s.nShape);
-  if(!changed.length){
-    repBody.innerHTML='';
-    repEmpty.style.display='block';
-    repTable.style.display='none';
-    return;
-  }
-  repEmpty.style.display='none';
-  repTable.style.display='table';
   let cidx=0;
-  repBody.innerHTML=changed.map(s=>{
+  const repRows=changed.map(s=>{
     cidx++;
     const bShape=s.oShape||s.shape||'―';
     const bSize=s.oSize||s.size||'―';
@@ -1002,6 +989,82 @@ function renderPrintTables(){
       <td>${escHtml(s.note||'―')}</td>
     </tr>`;
   }).join('');
+  return { allRows, repRows, hasChanged:changed.length>0 };
+}
+
+function renderPrintTables(){
+  const allBody=document.getElementById('plAllBody');
+  const repBody=document.getElementById('plRepBody');
+  const repEmpty=document.getElementById('plRepEmpty');
+  const repTable=document.getElementById('plRepTable');
+  if(!allBody||!repBody||!repEmpty||!repTable) return;
+  const rows=buildPrintRows();
+  allBody.innerHTML=rows.allRows;
+  if(!rows.hasChanged){
+    repBody.innerHTML='';
+    repEmpty.style.display='block';
+    repTable.style.display='none';
+    return;
+  }
+  repBody.innerHTML=rows.repRows;
+  repEmpty.style.display='none';
+  repTable.style.display='table';
+}
+
+function doPrint(){
+  const creatorName=displayName(myName)||'―';
+  const createdAt=new Date().toLocaleString('ja-JP');
+  const rows=buildPrintRows();
+  const repSection=rows.hasChanged
+    ?`<table class="pt"><thead><tr>
+      <th>#</th><th>ST/Sl</th><th>金型No</th><th>変更前</th><th>変更後</th><th>詳細</th><th>備考</th>
+    </tr></thead><tbody>${rows.repRows}</tbody></table>`
+    :`<div class="empty">入替変更はありません。</div>`;
+  const html=`<!doctype html>
+<html lang="ja"><head><meta charset="UTF-8"><title>金型入替計画書</title>
+<style>
+*{box-sizing:border-box}body{font-family:'Noto Sans JP',sans-serif;color:#111;margin:10mm}
+h1{font-size:18px;margin:0 0 2px}p{font-size:12px;margin:0}
+.meta{border-bottom:1px solid #333;padding-bottom:6px;margin-bottom:10px}
+.box{border:1px solid #333;padding:8px 10px;margin-bottom:10px;break-inside:avoid;page-break-inside:avoid}
+.ttl{font-weight:700;margin-bottom:6px}
+.pt{width:100%;border-collapse:collapse;font-size:11px}
+.pt th,.pt td{border:1px solid #222;padding:4px 6px;vertical-align:middle}
+.pt th{background:#2f6f60;color:#fff}
+.empty{padding:8px;border:1px dashed #999;background:#f8f8f8;color:#555}
+.st-replace td,.st-new-a td{background:#fff4e8}
+@page{size:A4 portrait;margin:10mm}
+</style></head><body>
+<div class="meta">
+  <h1>金型入替シミュレーター</h1>
+  <p>金型入替計画書</p>
+  <p>作成日時：${escHtml(createdAt)} ／ 作成者：${escHtml(creatorName)} ／ EMZ3612M2E ／ 日建フレメックス株式会社</p>
+</div>
+<div class="box">
+  <div class="ttl">金型一覧（全体）</div>
+  <table class="pt"><thead><tr>
+    <th>数</th><th>#</th><th>金型No</th><th>ステーション</th><th>形状</th><th>サイズ</th><th>詳細</th><th>用途</th><th>状態</th>
+  </tr></thead><tbody>${rows.allRows}</tbody></table>
+</div>
+<div class="box">
+  <div class="ttl">入替変更一覧</div>
+  ${repSection}
+</div>
+</body></html>`;
+  const w=window.open('','_blank');
+  if(!w){
+    // Popupがブロックされた場合は従来の同一画面印刷へフォールバック
+    renderPrintTables();
+    document.getElementById('ph-dt').textContent=
+      `作成日時：${createdAt} ／ 作成者：${creatorName} ／ EMZ3612M2E ／ 日建フレメックス株式会社`;
+    window.print();
+    return;
+  }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(()=>w.print(),120);
 }
 
 function nextSlotNum(st){
@@ -2054,14 +2117,6 @@ function exportCSV(){
   a.download=`金型入替計画_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'')}.csv`;
   a.click();
   toast('📥 CSVを出力しました','ok');
-}
-
-function doPrint(){
-  renderPrintTables();
-  const creatorName=displayName(myName)||'―';
-  document.getElementById('ph-dt').textContent=
-    `作成日時：${new Date().toLocaleString('ja-JP')} ／ 作成者：${creatorName} ／ EMZ3612M2E ／ 日建フレメックス株式会社`;
-  window.print();
 }
 
 // ================================================================
