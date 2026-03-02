@@ -421,7 +421,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
   <div class="left no-print" id="leftPanel">
     <div class="fold-btn" onclick="toggleSidebar()">❮</div>
     <div class="lph">
-      <div class="lp-lbl">📦 候補金型リスト（見積書＋カスタム）</div>
+      <div class="lp-lbl">📦 候補金型リスト（任意追加）</div>
       <div class="sr"><input type="text" id="search" placeholder="形状・サイズで検索…" oninput="renderCands()"></div>
     </div>
     <div class="ftabs">
@@ -554,7 +554,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 <!-- カスタムサイズ入力モーダル -->
 <div class="ov" id="cmOv">
   <div class="modal cm-modal">
-    <h3>✏️ 任意サイズで入替える</h3>
+    <h3>✏️ 任意サイズ候補を追加</h3>
     <p id="cm-sub"></p>
     <div class="pv-area" id="pv-area" style="display:none">
       <div class="pv-lbl">変更プレビュー</div>
@@ -577,16 +577,8 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
     </div>
     <div class="fg"><label>詳細・条件</label>
       <input type="text" id="cm-dt" placeholder="例: CL=0.30, SKH, 上向き" oninput="upPv()"></div>
-    <!-- 用途入力欄 -->
-    <div class="fr">
-      <div class="fg"><label>用途</label>
-        <input type="text" id="cm-purpose" placeholder="例: M4タップ下穴">
-      </div>
-    </div>
-    <div class="fg"><label>備考・メモ（会議メモ、確認事項など）</label>
-      <textarea id="cm-nt" placeholder="例: 現行より0.3大きくする / 要確認"></textarea></div>
     <button class="btn primary" style="width:100%;margin-bottom:7px;padding:9px;font-size:calc(12px * var(--font-scale));justify-content:center"
-            onclick="applyCm()">✅ この内容で入替える</button>
+            onclick="addCmCandidate()">✅ 候補に追加</button>
     <button class="m-close" onclick="closeOv('cmOv')">キャンセル</button>
   </div>
 </div>
@@ -944,13 +936,46 @@ function normalizeSlots(arr){
   arr.forEach(s=>normalizeSlotMeta(s));
 }
 
+function isLegacySeedCandidateId(id){
+  return /^c\d+$/i.test(String(id||''));
+}
+
+function sanitizeCandidates(list){
+  if(!Array.isArray(list)) return [];
+  return list
+    .filter(c=>c&&typeof c==='object')
+    .filter(c=>!isLegacySeedCandidateId(c.id))
+    .map(c=>({
+      id:String(c.id||'').trim(),
+      shape:String(c.shape||'丸').trim()||'丸',
+      size:String(c.size||'').trim(),
+      detail:String(c.detail||'').trim(),
+      range:['A','B','C','D','E','G'].includes(c.range)?c.range:'A',
+      no:(c.no===undefined||c.no===null||String(c.no).trim()==='')?'CUSTOM':String(c.no).trim()
+    }))
+    .filter(c=>c.id&&c.size);
+}
+
+function syncCandidateState(){
+  const ids=new Set(cands.map(c=>c.id));
+  used=new Set([...used].filter(id=>ids.has(id)));
+  const maxCu=cands.reduce((mx,c)=>{
+    const m=String(c.id||'').match(/^cu-(\d+)$/);
+    if(!m) return mx;
+    const n=Number(m[1]);
+    return Number.isFinite(n)?Math.max(mx,n):mx;
+  },999);
+  cidCnt=Math.max(Number(cidCnt)||1000,maxCu+1);
+}
+
 function initSlots(){
   slots=JSON.parse(JSON.stringify(INIT));
-  cands=JSON.parse(JSON.stringify(BASE_CANDS));
+  cands=[];
   used=new Set(); cidCnt=1000;
   stationGuide=JSON.parse(JSON.stringify(DEFAULT_STATION_GUIDE));
   applyGuideToStations();
   normalizeSlots(slots);
+  syncCandidateState();
 }
 initSlots();
 
@@ -1418,6 +1443,8 @@ function addCustomCand(){
   if(!sz){toast('サイズを入力してください','warn');return;}
   cands.unshift({id:'cu-'+(cidCnt++),shape:sh,size:sz,detail:dt||'カスタム',range:st,no:'CUSTOM'});
   document.getElementById('cf-sz').value=''; document.getElementById('cf-dt').value='';
+  syncCandidateState();
+  queueAutoSave();
   renderCands(); toast(`✅ ${sh} ${sz} をリストに追加しました`,'ok');
 }
 
@@ -1425,6 +1452,8 @@ function delCand(e,id){
   e.stopPropagation();
   if(!editing){ toast('現在他のユーザーが編集中です。読み取り専用です','warn'); return; }
   cands=cands.filter(c=>c.id!==id);
+  syncCandidateState();
+  queueAutoSave();
   renderCands();
 }
 
@@ -1650,15 +1679,23 @@ function openSlotOv(e,idx){
   // Set default purpose input
   const smp=document.getElementById('sm-purpose');
   if(smp) smp.value = (s.nPurpose || s.purpose || '');
-  // カスタム入力ボタン
+  // 任意サイズ候補の追加ボタン
   const cb=document.createElement('div'); cb.className='mop'; cb.style.border='1px solid var(--accent2)';
-  cb.innerHTML=`<div class="mi">✏️</div><div><div class="mn" style="color:var(--accent2)">任意サイズを直接入力する</div><div class="mm">リストにない金型も指定できます</div></div>`;
+  cb.innerHTML=`<div class="mi">✏️</div><div><div class="mn" style="color:var(--accent2)">任意サイズ候補を追加する</div><div class="mm">候補に追加後、下の候補リストから選択します</div></div>`;
   cb.addEventListener('click',()=>{closeOv('slotOv');openCmOv(idx);}); ml.appendChild(cb);
   const sep=document.createElement('div');
   sep.style.cssText='font-size:calc(8px * var(--font-scale));color:var(--text-dim);padding:5px 0 2px;opacity:.5;letter-spacing:.1em;text-transform:uppercase';
   sep.textContent='— 候補リストから選択 —'; ml.appendChild(sep);
   // ステーション一致を先に表示
-  [...cands.filter(c=>c.range===s.st),...cands.filter(c=>c.range!==s.st)].forEach(c=>{
+  const list=[...cands.filter(c=>c.range===s.st),...cands.filter(c=>c.range!==s.st)];
+  if(!list.length){
+    const empty=document.createElement('div');
+    empty.className='log-empty';
+    empty.style.padding='12px 8px';
+    empty.textContent='候補がありません。上の「任意サイズ候補を追加する」から追加してください。';
+    ml.appendChild(empty);
+  }
+  list.forEach(c=>{
     const isU=used.has(c.id)&&c.id!==s.prevCid;
     const d=document.createElement('div'); d.className=`mop ${isU?'used':''}`;
     d.innerHTML=`<div class="mi">${ic(c.shape)}</div>
@@ -1701,14 +1738,10 @@ function openCmOv(idx){
   actIdx=idx; const s=slots[idx];
   if(!s) return;
   if(!guardSlotReplace(s)) return;
-  document.getElementById('cm-sub').textContent=`${ST[s.st].name} スロット${s.num} — 現在: ${s.nShape||s.shape} ${s.nSize||s.size}`;
-  document.getElementById('cm-sh').value=s.nShape||s.shape||'丸';
+  document.getElementById('cm-sub').textContent=`${ST[s.st].name} スロット${s.num} 用の候補を追加`;
+  document.getElementById('cm-sh').value='丸';
   document.getElementById('cm-sz').value='';
   document.getElementById('cm-dt').value='';
-  document.getElementById('cm-nt').value='';
-  // Set current purpose on custom modal
-  const cmp=document.getElementById('cm-purpose');
-  if(cmp) cmp.value = (s.nPurpose || s.purpose || '');
   upPv();
   document.getElementById('cmOv').classList.add('open');
 }
@@ -1716,22 +1749,38 @@ function openCmOv(idx){
 function upPv(){
   if(actIdx===null||actIdx===undefined) return;
   const s=slots[actIdx];
+  if(!s) return;
   const sh=document.getElementById('cm-sh').value, sz=document.getElementById('cm-sz').value||'―';
   const dt=document.getElementById('cm-dt').value;
   document.getElementById('pv-area').style.display='block';
-  document.getElementById('pv-old').textContent=`${s.nShape||s.shape} ／ ${s.nSize||s.size}`;
+  document.getElementById('pv-old').textContent=`追加先: ${ST[s.st].name} Sl.${s.num}`;
   document.getElementById('pv-new').textContent=`${sh} ／ ${sz}${dt?' ／ '+dt:''}`;
 }
 
-function applyCm(){
+function addCmCandidate(){
+  if(actIdx===null||actIdx===undefined) return;
+  if(!editing){ toast('現在他のユーザーが編集中です。読み取り専用です','warn'); return; }
+  const s=slots[actIdx];
+  if(!s) return;
   const sh=document.getElementById('cm-sh').value;
   const sz=document.getElementById('cm-sz').value.trim();
   const dt=document.getElementById('cm-dt').value.trim();
-  const nt=document.getElementById('cm-nt').value.trim();
-  const purpose=document.getElementById('cm-purpose').value.trim();
   if(!sz){toast('サイズを入力してください','warn');return;}
-  applyFree(actIdx,sh,sz,dt,nt,purpose);
+  const id='cu-'+(cidCnt++);
+  cands.unshift({
+    id,
+    shape:sh,
+    size:sz,
+    detail:dt||'カスタム',
+    range:s.st,
+    no:'CUSTOM'
+  });
+  syncCandidateState();
+  queueAutoSave();
+  renderCands();
   closeOv('cmOv');
+  openSlotOv(null,actIdx);
+  toast(`✅ 候補「${sh} ${sz}」を追加しました。リストから選択してください`,'ok');
 }
 
 function saveSlotPurposeOnly(){
@@ -1765,8 +1814,6 @@ document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{ if(e
         e.stopPropagation();
         if(id==='sm-purpose'){
           saveSlotPurposeOnly();
-        }else if(id==='cm-purpose'){
-          applyCm();
         }else if(id==='bm-purpose'){
           saveBaseSlot();
         }
@@ -1776,7 +1823,6 @@ document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{ if(e
   // Wait a tick to ensure modals are in DOM
   setTimeout(()=>{
     attachEnterHandler('sm-purpose');
-    attachEnterHandler('cm-purpose');
     attachEnterHandler('bm-purpose');
   },0);
 })();
@@ -1801,9 +1847,10 @@ function applyPayload(d){
   if(!d||!d.slots) throw new Error('invalid');
   slots=d.slots;
   normalizeSlots(slots);
-  cands=d.cands||JSON.parse(JSON.stringify(BASE_CANDS));
+  cands=sanitizeCandidates(d.cands||[]);
   used=new Set(d.used||[]);
   cidCnt=d.cidCnt||1000;
+  syncCandidateState();
   stationGuide=normalizeGuide(d.stationGuide);
   applyGuideToStations();
 }
