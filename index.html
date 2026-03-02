@@ -1635,7 +1635,8 @@ function saveBaseSlot(){
   const purpose=document.getElementById('bm-purpose').value.trim();
   const baseStatus=document.getElementById('bm-status').value;
   const noInput=document.getElementById('bm-no').value.trim();
-  if(sh!=='―'&&!sizeInput){ toast('サイズを入力してください','warn'); return; }
+  const sizeOptional=(sh==='特型');
+  if(sh!=='―'&&!sizeInput&&!sizeOptional){ toast('サイズを入力してください','warn'); return; }
 
   let moldNo=noInput;
   if(noInput===''){
@@ -1644,7 +1645,7 @@ function saveBaseSlot(){
     moldNo=Number(noInput);
   }
 
-  const nextSize=(sh==='―')?'―':sizeInput;
+  const nextSize=(sh==='―'||(sizeOptional&&!sizeInput))?'―':sizeInput;
   const nextDetail=(sh==='―')?(detailInput||'空き'):(detailInput||'―');
   s.no=moldNo;
   s.shape=sh;
