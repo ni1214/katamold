@@ -142,6 +142,15 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 .stf-btn:last-child{border-right:none}
 .stf-btn:hover{color:var(--accent3)}
 .stf-btn.on{background:var(--accent3);color:#000}
+.policy-filter{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:var(--steel)}
+.pf-btn{padding:5px 9px;border:none;border-right:1px solid var(--border);background:transparent;color:var(--text-dim);
+  font-size:calc(11px * var(--font-scale));font-weight:600;cursor:pointer;font-family:'Noto Sans JP',sans-serif;transition:all .12s}
+.pf-btn:last-child{border-right:none}
+.pf-btn:hover{color:var(--warn)}
+.pf-btn.on{background:var(--warn);color:#000}
+.pf-btn.f-lock.on{background:var(--accent);color:#000}
+.pf-btn.f-change.on{background:var(--accent2);color:#fff}
+.pf-btn.f-empty.on{background:var(--text-dim);color:#000}
 .turret-search{display:flex;align-items:center;gap:5px;background:var(--steel);border:1px solid var(--border);border-radius:6px;padding:2px 6px}
 .turret-search input{width:220px;background:transparent;border:none;outline:none;color:var(--text);
   font-size:calc(11px * var(--font-scale));font-family:'Noto Sans JP',sans-serif}
@@ -532,6 +541,13 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
             <button class="stf-btn" onclick="setTurretStationFilter('E',this)">E</button>
             <button class="stf-btn" onclick="setTurretStationFilter('G',this)">G</button>
           </div>
+          <div class="policy-filter">
+            <button class="pf-btn on f-all" onclick="setTurretPolicyFilter('all',this)">全状態</button>
+            <button class="pf-btn f-lock" onclick="setTurretPolicyFilter('lock',this)">ロック</button>
+            <button class="pf-btn f-change" onclick="setTurretPolicyFilter('change',this)">要変更</button>
+            <button class="pf-btn f-check" onclick="setTurretPolicyFilter('check',this)">要確認</button>
+            <button class="pf-btn f-empty" onclick="setTurretPolicyFilter('empty',this)">空き</button>
+          </div>
           <div class="turret-search">
             <input id="turretSearch" type="text" placeholder="No / 形状 / サイズ / 詳細で検索" oninput="onTurretSearchInput()">
             <button class="ts-clear" type="button" onclick="clearTurretSearch()" title="検索クリア">✕</button>
@@ -891,11 +907,12 @@ const ONBOARDING_STEPS=[
   {
     title:'2. フィルターと検索',
     selector:'.turret-tools',
-    focus:'形状 / ステーション / 検索で絞込',
+    focus:'形状 / ST / 状態 / 検索で絞込',
     pad:10,
     body:`<h4>目的の金型を絞る</h4>
       <ul>
         <li>形状フィルターとステーションフィルターで対象を絞れます。</li>
+        <li>状態フィルターで「ロック / 要変更 / 要確認 / 空き」も絞り込めます。</li>
         <li>検索欄では No / 形状 / サイズ / 詳細 を横断検索できます。</li>
       </ul>`
   },
@@ -1085,6 +1102,7 @@ let myName=SHARED_NAME, myColor=SHARED_COLOR;
 let turretViewMode='replacement';
 let turretShapeFilter='all';
 let turretStationFilter='all';
+let turretPolicyFilter='all';
 let turretSearchText='';
 let stationGuide=JSON.parse(JSON.stringify(DEFAULT_STATION_GUIDE));
 let driveEndpoint='';
@@ -1377,10 +1395,18 @@ function isBasicShape(shape){
 
 function matchesTurretFilter(s){
   if(turretStationFilter!=='all'&&s.st!==turretStationFilter) return false;
+  const status=slotStat(s);
+  if(turretPolicyFilter==='empty'){
+    if(status!=='empty') return false;
+  }else if(turretPolicyFilter!=='all'){
+    if(getBaseStatus(s)!==turretPolicyFilter) return false;
+  }
   const dv=slotDisplay(s);
   const shape=dv.shape||'';
-  if(turretShapeFilter==='特殊'&&isBasicShape(shape)) return false;
-  if(turretShapeFilter!=='all'&&turretShapeFilter!=='特殊'&&shape!==turretShapeFilter) return false;
+  if(turretPolicyFilter!=='empty'){
+    if(turretShapeFilter==='特殊'&&isBasicShape(shape)) return false;
+    if(turretShapeFilter!=='all'&&turretShapeFilter!=='特殊'&&shape!==turretShapeFilter) return false;
+  }
   const q=turretSearchText.trim().toLowerCase();
   if(!q) return true;
   const text=[
@@ -1407,6 +1433,13 @@ function setTurretShapeFilter(filter,el){
 function setTurretStationFilter(filter,el){
   turretStationFilter=filter;
   document.querySelectorAll('.stf-btn').forEach(btn=>btn.classList.remove('on'));
+  if(el) el.classList.add('on');
+  renderTurret();
+}
+
+function setTurretPolicyFilter(filter,el){
+  turretPolicyFilter=filter;
+  document.querySelectorAll('.pf-btn').forEach(btn=>btn.classList.remove('on'));
   if(el) el.classList.add('on');
   renderTurret();
 }
@@ -1522,9 +1555,11 @@ function renderTurret(){
   if(renderedCount===0){
     const fl=turretShapeFilter==='all'?'全形状':turretShapeFilter;
     const st=turretStationFilter==='all'?'全ST':`${turretStationFilter}ST`;
+    const policyLabelMap={all:'全状態',lock:'ロック',change:'要変更',check:'要確認',empty:'空き'};
+    const pf=policyLabelMap[turretPolicyFilter]||'全状態';
     const q=turretSearchText.trim();
     const qText=q?` / 検索: ${escHtml(q)}`:'';
-    con.innerHTML=`<div class="log-empty">該当する金型がありません（形状: ${escHtml(fl)} / ST: ${escHtml(st)}${qText}）</div>`;
+    con.innerHTML=`<div class="log-empty">該当する金型がありません（形状: ${escHtml(fl)} / ST: ${escHtml(st)} / 状態: ${escHtml(pf)}${qText}）</div>`;
   }
 }
 
