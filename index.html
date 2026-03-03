@@ -1802,7 +1802,7 @@ function saveBaseSlot(){
   const purpose=document.getElementById('bm-purpose').value.trim();
   const baseStatus=document.getElementById('bm-status').value;
   const noInput=document.getElementById('bm-no').value.trim();
-  const sizeOptional=(sh==='特型');
+  const sizeOptional=['特型','刻印','ポンチ'].includes(sh);
   if(sh!=='―'&&!sizeInput&&!sizeOptional){ toast('サイズを入力してください','warn'); return; }
 
   let moldNo=noInput;
