@@ -335,7 +335,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
   position:fixed;
   z-index:691;
   pointer-events:none;
-  background:rgba(0,212,255,.14);
+  background:var(--steel-mid);
   border:1px solid var(--accent);
   border-radius:999px;
   color:var(--accent);
@@ -466,7 +466,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
     <button class="btn warn" id="editBtn" onclick="startEditing()" style="display:none;">✏️ 編集開始</button>
     <button class="btn ok" id="endBtn" onclick="endEditing()" style="display:none;">✔ 編集終了（解放）</button>
     <button id="saveJsonBtn" class="btn ok" onclick="driveSaveNow(true)" style="transition:all .2s">☁ Drive保存</button>
-    <button class="btn" onclick="openGuideOv()">📘 ステーション表</button>
+    <button class="btn" id="guideBtn" onclick="openGuideOv()">📘 ステーション表</button>
     <button class="btn" id="helpWizardBtn" onclick="openOnboardingWizard(true)">❓ 使い方</button>
     <button class="btn" onclick="openSaveModal()" style="font-size:calc(11px * var(--font-scale))">☁ Drive同期・その他</button>
     <button class="btn primary" onclick="doPrint()">🖨️ 印刷・PDF</button>
@@ -878,20 +878,9 @@ const REMOTE_LOCK_TTL_MS=45000;
 const ONBOARDING_DISMISS_KEY='moldSimulatorOnboardingDismissV1';
 const ONBOARDING_STEPS=[
   {
-    title:'1. ヘッダー',
-    selector:'.h-title',
-    focus:'ここで機械名と画面名を確認',
-    pad:10,
-    body:`<h4>画面の見方</h4>
-      <ul>
-        <li>上部に主要操作（保存・印刷・ガイド）が並びます。</li>
-        <li>最初に対象の機械名と画面名を確認してください。</li>
-      </ul>`
-  },
-  {
-    title:'2. 表示切替',
+    title:'1. 表示切替',
     selector:'#viewSwitch',
-    focus:'入替表示 / デフォルト表示 を切替',
+    focus:'入替表示 / デフォルト表示を切替',
     pad:8,
     body:`<h4>表示モード</h4>
       <ul>
@@ -900,9 +889,9 @@ const ONBOARDING_STEPS=[
       </ul>`
   },
   {
-    title:'3. フィルターと検索',
+    title:'2. フィルターと検索',
     selector:'.turret-tools',
-    focus:'形状 / ステーション / 検索を同時利用',
+    focus:'形状 / ステーション / 検索で絞込',
     pad:10,
     body:`<h4>目的の金型を絞る</h4>
       <ul>
@@ -911,7 +900,7 @@ const ONBOARDING_STEPS=[
       </ul>`
   },
   {
-    title:'4. タレットスロット',
+    title:'3. タレットスロット',
     selector:'#turret .slot:not(.empty)',
     focus:'スロットをクリックして入替・編集',
     pad:8,
@@ -919,6 +908,17 @@ const ONBOARDING_STEPS=[
       <ul>
         <li>スロットを開くと入替・用途編集・デフォルト編集ができます。</li>
         <li>ロックステータスのスロットは入替できません。</li>
+      </ul>`
+  },
+  {
+    title:'4. ステーション表',
+    selector:'#guideBtn',
+    focus:'ステーション表を開く',
+    pad:8,
+    body:`<h4>ステーション表の使い方</h4>
+      <ul>
+        <li>A〜Gのサイズ範囲や呼称を確認できます。</li>
+        <li>運用ルールが変わったら、この表を編集して保存できます。</li>
       </ul>`
   },
   {
@@ -933,7 +933,19 @@ const ONBOARDING_STEPS=[
       </ul>`
   },
   {
-    title:'6. ガイド再表示',
+    title:'6. 編集開始/終了と排他',
+    selector:'.h-acts',
+    focus:'編集開始・編集終了と読取専用の切替',
+    pad:10,
+    body:`<h4>複数PCでの編集ルール</h4>
+      <ul>
+        <li>編集する人は「編集開始」を押して編集権を取得します。</li>
+        <li>作業後は「編集終了（解放）」を押して次の人に渡します。</li>
+        <li>他の人が編集中はあなたの画面は読取専用になり、編集できません。</li>
+      </ul>`
+  },
+  {
+    title:'7. ガイド再表示',
     selector:'#helpWizardBtn',
     focus:'このボタンでいつでも再表示',
     pad:8,
