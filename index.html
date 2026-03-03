@@ -304,6 +304,11 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 .mop .mi{font-size:calc(16px * var(--font-scale))}
 .mop .mn{font-size:calc(11px * var(--font-scale));font-weight:500}
 .mop .mm{font-size:calc(11px * var(--font-scale));color:var(--text-dim);font-family:'Share Tech Mono',monospace}
+.mop-right{display:flex;align-items:center;gap:4px}
+.mop-act{width:22px;height:22px;border-radius:4px;border:1px solid var(--border);background:var(--steel-mid);
+  color:var(--text-dim);cursor:pointer;font-size:calc(10px * var(--font-scale));display:flex;align-items:center;justify-content:center;transition:all .12s}
+.mop-act.edit:hover{border-color:var(--accent);color:var(--accent)}
+.mop-act.del:hover{border-color:var(--danger);background:rgba(255,68,68,.15);color:var(--danger)}
 .m-close{width:100%;padding:8px;background:var(--steel);border:1px solid var(--border);
   border-radius:5px;color:var(--text-dim);cursor:pointer;font-size:calc(11px * var(--font-scale));font-family:'Noto Sans JP',sans-serif;transition:all .12s}
 .m-close:hover{border-color:var(--danger);color:var(--danger)}
@@ -649,9 +654,9 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
     </div>
     <div class="fg"><label>詳細・条件</label>
       <input type="text" id="cm-dt" placeholder="例: CL=0.30, SKH, 上向き" oninput="upPv()"></div>
-    <button class="btn primary" style="width:100%;margin-bottom:7px;padding:9px;font-size:calc(12px * var(--font-scale));justify-content:center"
+    <button id="cmSaveBtn" class="btn primary" style="width:100%;margin-bottom:7px;padding:9px;font-size:calc(12px * var(--font-scale));justify-content:center"
             onclick="addCmCandidate()">✅ 候補に追加</button>
-    <button class="m-close" onclick="closeOv('cmOv')">キャンセル</button>
+    <button class="m-close" onclick="closeCmOv()">キャンセル</button>
   </div>
 </div>
 
@@ -1081,6 +1086,7 @@ const BASE_CANDS=[
 // STATE
 // ================================================================
 let slots, cands, used, filt='all', dragId=null, actIdx=null, cidCnt=1000;
+let cmEditCandidateId=null;
 let autoSaveTimer=null;
 let skipAutoSave=false;
 let remoteMode=false;
@@ -1657,13 +1663,35 @@ function addCustomCand(){
   renderCands(); toast(`✅ ${sh} ${sz} をリストに追加しました`,'ok');
 }
 
-function delCand(e,id){
-  e.stopPropagation();
-  if(!editing){ toast('現在他のユーザーが編集中です。読み取り専用です','warn'); return; }
+function removeCandidateById(id){
+  const before=cands.length;
   cands=cands.filter(c=>c.id!==id);
+  if(cands.length===before) return false;
   syncCandidateState();
   queueAutoSave();
   renderCands();
+  return true;
+}
+
+function delCand(e,id){
+  e.stopPropagation();
+  if(!editing){ toast('現在他ユーザーが編集中です。読み取り専用です。','warn'); return; }
+  removeCandidateById(id);
+}
+
+function editCandFromSlot(e,id,idx){
+  e.stopPropagation();
+  if(!editing){ toast('現在他ユーザーが編集中です。読み取り専用です。','warn'); return; }
+  closeOv('slotOv');
+  openCmOv(idx,id);
+}
+
+function delCandFromSlot(e,id,idx){
+  e.stopPropagation();
+  if(!editing){ toast('現在他ユーザーが編集中です。読み取り専用です。','warn'); return; }
+  if(!removeCandidateById(id)) return;
+  openSlotOv(null,idx);
+  toast('✅ 候補を削除しました','ok');
 }
 
 // ================================================================
@@ -1886,17 +1914,21 @@ function openSlotOv(e,idx){
   const dsh=s.nShape||s.shape, dsz=s.nSize||s.size;
   document.getElementById('sm-sub').textContent=`${ST[s.st].name} スロット${s.num} — 現在: ${dsh} ${dsz}`;
   const ml=document.getElementById('sm-list'); ml.innerHTML='';
-  // Set default purpose input
   const smp=document.getElementById('sm-purpose');
-  if(smp) smp.value = (s.nPurpose || s.purpose || '');
-  // 任意サイズ候補の追加ボタン
-  const cb=document.createElement('div'); cb.className='mop'; cb.style.border='1px solid var(--accent2)';
+  if(smp) smp.value=(s.nPurpose||s.purpose||'');
+
+  const cb=document.createElement('div');
+  cb.className='mop';
+  cb.style.border='1px solid var(--accent2)';
   cb.innerHTML=`<div class="mi">✏️</div><div><div class="mn" style="color:var(--accent2)">任意サイズ候補を追加する</div><div class="mm">候補に追加後、下の候補リストから選択します</div></div>`;
-  cb.addEventListener('click',()=>{closeOv('slotOv');openCmOv(idx);}); ml.appendChild(cb);
+  cb.addEventListener('click',()=>{closeOv('slotOv');openCmOv(idx);});
+  ml.appendChild(cb);
+
   const sep=document.createElement('div');
   sep.style.cssText='font-size:calc(8px * var(--font-scale));color:var(--text-dim);padding:5px 0 2px;opacity:.5;letter-spacing:.1em;text-transform:uppercase';
-  sep.textContent='— 候補リストから選択 —'; ml.appendChild(sep);
-  // ステーション一致を先に表示
+  sep.textContent='— 候補リストから選択 —';
+  ml.appendChild(sep);
+
   const list=[...cands.filter(c=>c.range===s.st),...cands.filter(c=>c.range!==s.st)];
   if(!list.length){
     const empty=document.createElement('div');
@@ -1905,12 +1937,19 @@ function openSlotOv(e,idx){
     empty.textContent='候補がありません。上の「任意サイズ候補を追加する」から追加してください。';
     ml.appendChild(empty);
   }
+
   list.forEach(c=>{
     const isU=used.has(c.id)&&c.id!==s.prevCid;
-    const d=document.createElement('div'); d.className=`mop ${isU?'used':''}`;
+    const isCustom=c.id.startsWith('cu-');
+    const d=document.createElement('div');
+    d.className=`mop ${isU?'used':''}`;
     d.innerHTML=`<div class="mi">${ic(c.shape)}</div>
-      <div style="flex:1"><div class="mn">${c.shape} ${c.size}</div><div class="mm">${c.no}｜${c.detail}</div></div>
-      <div class="cst_">${c.range}</div>`;
+      <div style="flex:1"><div class="mn">${c.shape} ${c.size}</div><div class="mm">${c.no} | ${c.detail}</div></div>
+      <div class="mop-right">
+        ${isCustom?`<button class="mop-act edit" title="候補を編集" onclick="editCandFromSlot(event,'${c.id}',${idx})">✎</button>
+        <button class="mop-act del" title="候補を削除" onclick="delCandFromSlot(event,'${c.id}',${idx})">✕</button>`:''}
+        <div class="cst_">${c.range}</div>
+      </div>`;
     d.addEventListener('click',()=>{
       if(!isU){
         const p=document.getElementById('sm-purpose')?document.getElementById('sm-purpose').value.trim():'';
@@ -1944,18 +1983,40 @@ function openCandModal(cid){
   document.getElementById('slotOv').classList.add('open');
 }
 
-function openCmOv(idx){
-  actIdx=idx; const s=slots[idx];
+function setCmSaveButton(editingMode){
+  const btn=document.getElementById('cmSaveBtn');
+  if(!btn) return;
+  btn.textContent=editingMode?'✅ 候補を更新':'✅ 候補に追加';
+}
+
+function closeCmOv(){
+  cmEditCandidateId=null;
+  setCmSaveButton(false);
+  closeOv('cmOv');
+}
+
+function openCmOv(idx,candId=null){
+  actIdx=idx;
+  const s=slots[idx];
   if(!s) return;
   if(!guardSlotReplace(s)) return;
-  document.getElementById('cm-sub').textContent=`${ST[s.st].name} スロット${s.num} 用の候補を追加`;
-  document.getElementById('cm-sh').value='丸';
-  document.getElementById('cm-sz').value='';
-  document.getElementById('cm-dt').value='';
+  const editingMode=Boolean(candId);
+  let target=null;
+  if(editingMode){
+    target=cands.find(x=>x.id===candId);
+    if(!target){ toast('候補が見つかりません','warn'); return; }
+  }
+  cmEditCandidateId=editingMode?candId:null;
+  document.getElementById('cm-sub').textContent=editingMode
+    ?`${ST[s.st].name} スロット${s.num} の候補を編集`
+    :`${ST[s.st].name} スロット${s.num} 用の候補を追加`;
+  document.getElementById('cm-sh').value=editingMode?(target.shape||'丸'):'丸';
+  document.getElementById('cm-sz').value=editingMode?(target.size||''):'';
+  document.getElementById('cm-dt').value=editingMode?(target.detail||''):'';
+  setCmSaveButton(editingMode);
   upPv();
   document.getElementById('cmOv').classList.add('open');
 }
-
 function upPv(){
   if(actIdx===null||actIdx===undefined) return;
   const s=slots[actIdx];
@@ -1969,13 +2030,30 @@ function upPv(){
 
 function addCmCandidate(){
   if(actIdx===null||actIdx===undefined) return;
-  if(!editing){ toast('現在他のユーザーが編集中です。読み取り専用です','warn'); return; }
+  if(!editing){ toast('現在他ユーザーが編集中です。読み取り専用です。','warn'); return; }
   const s=slots[actIdx];
   if(!s) return;
   const sh=document.getElementById('cm-sh').value;
   const sz=document.getElementById('cm-sz').value.trim();
   const dt=document.getElementById('cm-dt').value.trim();
   if(!sz){toast('サイズを入力してください','warn');return;}
+
+  if(cmEditCandidateId){
+    const target=cands.find(x=>x.id===cmEditCandidateId);
+    if(!target){ toast('候補が見つかりません','warn'); closeCmOv(); return; }
+    target.shape=sh;
+    target.size=sz;
+    target.detail=dt||'カスタム';
+    target.no='CUSTOM';
+    syncCandidateState();
+    queueAutoSave();
+    renderCands();
+    closeCmOv();
+    openSlotOv(null,actIdx);
+    toast(`✅ 候補 ${sh} ${sz} を更新しました`,'ok');
+    return;
+  }
+
   const id='cu-'+(cidCnt++);
   cands.unshift({
     id,
@@ -1988,11 +2066,10 @@ function addCmCandidate(){
   syncCandidateState();
   queueAutoSave();
   renderCands();
-  closeOv('cmOv');
+  closeCmOv();
   openSlotOv(null,actIdx);
-  toast(`✅ 候補「${sh} ${sz}」を追加しました。リストから選択してください`,'ok');
+  toast(`✅ 候補 ${sh} ${sz} を追加しました。リストから選択してください`,'ok');
 }
-
 function saveSlotPurposeOnly(){
   if(actIdx===null||actIdx===undefined) return;
   if(!editing){ toast('現在他のユーザーが編集中です。読み取り専用です','warn'); return; }
