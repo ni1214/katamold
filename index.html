@@ -489,6 +489,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
     <button class="btn warn" id="editBtn" onclick="startEditing()" style="display:none;">✏️ 編集開始</button>
     <button class="btn ok" id="endBtn" onclick="endEditing()" style="display:none;">✔ 編集終了（解放）</button>
     <button id="saveJsonBtn" class="btn ok" onclick="driveSaveNow(true)" style="transition:all .2s">☁ Drive保存</button>
+    <button class="btn" id="amadaLinkBtn" onclick="openAmadaCatalog()">🔗 AMADA金型</button>
     <button class="btn" id="guideBtn" onclick="openGuideOv()">📘 ステーション表</button>
     <button class="btn" id="helpWizardBtn" onclick="openOnboardingWizard(true)">❓ 使い方</button>
     <button class="btn" onclick="openSaveModal()" style="font-size:calc(11px * var(--font-scale))">☁ Drive同期・その他</button>
@@ -923,6 +924,7 @@ const AUTO_SAVE_MS=700;
 const DRIVE_ENDPOINT_KEY='moldSimulatorDriveEndpointV1';
 const DRIVE_AUTO_SYNC_KEY='moldSimulatorDriveAutoSyncV1';
 const DRIVE_DEFAULT_ENDPOINT='https://script.google.com/macros/s/AKfycbwvdwCbGIBqquMdgJIAGBLEKRrKKriSq4oIMnkexK91n4U4EiryOF7HMyFC_fTZnjVv_A/exec';
+const AMADA_MOLD_CATALOG_URL='https://www.ai-link.ne.jp/free/products/kanagata/products/indexP.html';
 const DRIVE_DATA_FILENAME='金型入替計画_保存データ.json';
 const DRIVE_LOCK_FILENAME='金型入替計画_編集ロック.json';
 const REMOTE_POLL_MS=3000;
@@ -967,7 +969,18 @@ const ONBOARDING_STEPS=[
       </ul>`
   },
   {
-    title:'4. ステーション表',
+    title:'4. 候補参照リンク',
+    selector:'#amadaLinkBtn',
+    focus:'AMADA金型サイトを開く',
+    pad:8,
+    body:`<h4>候補選定の参照先</h4>
+      <ul>
+        <li>右上の「AMADA金型」を押すと、アマダ金型サイトを新しいタブで開けます。</li>
+        <li>確認した形状・サイズを左の「候補金型リスト（任意追加）」へ登録し、入替候補として利用します。</li>
+      </ul>`
+  },
+  {
+    title:'5. ステーション表',
     selector:'#guideBtn',
     focus:'ステーション表を開く',
     pad:8,
@@ -978,7 +991,7 @@ const ONBOARDING_STEPS=[
       </ul>`
   },
   {
-    title:'5. 保存と共有',
+    title:'6. 保存と共有',
     selector:'#saveJsonBtn',
     focus:'右上の Drive保存 で即時保存',
     pad:8,
@@ -989,7 +1002,7 @@ const ONBOARDING_STEPS=[
       </ul>`
   },
   {
-    title:'6. 編集開始/終了と排他',
+    title:'7. 編集開始/終了と排他',
     selector:'.h-acts',
     focus:'編集開始・編集終了と読取専用の切替',
     pad:10,
@@ -1001,7 +1014,7 @@ const ONBOARDING_STEPS=[
       </ul>`
   },
   {
-    title:'7. ガイド再表示',
+    title:'8. ガイド再表示',
     selector:'#helpWizardBtn',
     focus:'このボタンでいつでも再表示',
     pad:8,
@@ -2439,6 +2452,13 @@ function wizardPrev(){
 
 function maybeAutoOpenOnboardingWizard(){
   openOnboardingWizard(false);
+}
+
+function openAmadaCatalog(){
+  const w=window.open(AMADA_MOLD_CATALOG_URL,'_blank','noopener,noreferrer');
+  if(!w){
+    toast('ポップアップがブロックされました。ブラウザ設定を確認してください。','warn');
+  }
 }
 
 function closeOv(id){ document.getElementById(id).classList.remove('open'); }
