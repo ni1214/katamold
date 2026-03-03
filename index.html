@@ -314,6 +314,17 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 .m-close{width:100%;padding:8px;background:var(--steel);border:1px solid var(--border);
   border-radius:5px;color:var(--text-dim);cursor:pointer;font-size:calc(11px * var(--font-scale));font-family:'Noto Sans JP',sans-serif;transition:all .12s}
 .m-close:hover{border-color:var(--danger);color:var(--danger)}
+.slot-action-modal{width:470px}
+.slot-action-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.slot-action-btn{width:100%;background:var(--steel);border:1px solid var(--border);border-radius:7px;padding:10px 12px;
+  color:var(--text);cursor:pointer;text-align:left;font-family:'Noto Sans JP',sans-serif;transition:all .12s}
+.slot-action-btn:hover{border-color:var(--accent);background:var(--card-hover)}
+.slot-action-btn .ttl{display:block;font-size:calc(12px * var(--font-scale));font-weight:700;margin-bottom:2px}
+.slot-action-btn .sub{display:block;font-size:calc(10px * var(--font-scale));color:var(--text-dim)}
+.slot-action-btn.base:hover{border-color:var(--accent3)}
+.slot-action-btn.rep:hover{border-color:var(--accent2)}
+.slot-action-btn.disabled{opacity:.45;cursor:not-allowed}
+.slot-action-note{font-size:calc(10px * var(--font-scale));color:var(--warn);margin-bottom:8px;line-height:1.6}
 /* custom modal */
 .cm-modal{width:470px}
 .fg{margin-bottom:10px}
@@ -632,6 +643,26 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
   </div>
 </div>
 
+<!-- スロット操作選択モーダル -->
+<div class="ov" id="slotActionOv">
+  <div class="modal slot-action-modal">
+    <h3>🧭 スロット操作を選択</h3>
+    <p id="sa-sub"></p>
+    <div class="slot-action-list">
+      <button class="slot-action-btn base" onclick="chooseSlotActionBase()">
+        <span class="ttl">🛠 既存金型を編集</span>
+        <span class="sub">このスロットのデフォルト情報（No/形状/サイズ/ステータス）を編集します</span>
+      </button>
+      <button class="slot-action-btn rep" id="sa-replace-btn" onclick="chooseSlotActionReplace()">
+        <span class="ttl">⚡ 入替候補を追加・選択</span>
+        <span class="sub">候補を追加/編集して、このスロットへ入替を実行します</span>
+      </button>
+    </div>
+    <div id="sa-lock-note" class="slot-action-note" style="display:none">このスロットはロック設定のため、入替はできません。</div>
+    <button class="m-close" onclick="closeOv('slotActionOv')">キャンセル</button>
+  </div>
+</div>
+
 <!-- カスタムサイズ入力モーダル -->
 <div class="ov" id="cmOv">
   <div class="modal cm-modal">
@@ -929,11 +960,12 @@ const ONBOARDING_STEPS=[
   {
     title:'3. タレットスロット',
     selector:'#turret .slot:not(.empty)',
-    focus:'スロットをクリックして入替・編集',
+    focus:'スロットをクリックして操作を選択',
     pad:8,
     body:`<h4>金型の編集ポイント</h4>
       <ul>
-        <li>スロットを開くと入替・用途編集・デフォルト編集ができます。</li>
+        <li>スロットをクリックすると、まず「既存編集」か「入替候補追加/選択」を選べます。</li>
+        <li>「既存編集」はデフォルト情報の修正、「入替候補追加/選択」は入替実行に使います。</li>
         <li>ロックステータスのスロットは入替できません。</li>
       </ul>`
   },
@@ -1505,12 +1537,44 @@ function clearTurretSearch(){
   renderTurret();
 }
 
+function openSlotActionOv(e,idx){
+  if(e) e.stopPropagation();
+  actIdx=idx;
+  const s=slots[idx];
+  if(!s) return;
+  const dsh=s.nShape||s.shape||'―';
+  const dsz=s.nSize||s.size||'―';
+  const sub=document.getElementById('sa-sub');
+  if(sub) sub.textContent=`${ST[s.st].name} スロット${s.num} — 現在: ${dsh} ${dsz}`;
+  const repBtn=document.getElementById('sa-replace-btn');
+  const lockNote=document.getElementById('sa-lock-note');
+  const locked=isSlotLocked(s);
+  if(repBtn){
+    repBtn.disabled=locked;
+    repBtn.classList.toggle('disabled',locked);
+  }
+  if(lockNote) lockNote.style.display=locked?'block':'none';
+  document.getElementById('slotActionOv').classList.add('open');
+}
+
+function chooseSlotActionBase(){
+  if(actIdx===null||actIdx===undefined) return;
+  closeOv('slotActionOv');
+  openBaseOv(null,actIdx);
+}
+
+function chooseSlotActionReplace(){
+  if(actIdx===null||actIdx===undefined) return;
+  closeOv('slotActionOv');
+  openSlotOv(null,actIdx);
+}
+
 function openSlotEditor(e,idx){
   if(turretViewMode==='default'){
     openBaseOv(e,idx);
     return;
   }
-  openSlotOv(e,idx);
+  openSlotActionOv(e,idx);
 }
 
 function updateViewSwitchUi(){
@@ -1569,7 +1633,7 @@ function renderTurret(){
       const editorBadge=shownEditor
         ?`<div class="s-editor" style="background:${s.editorColor||'var(--accent)'}22;color:${s.editorColor||'var(--accent)'}">● ${escHtml(shownEditor)}</div>`:'';
       const purp=dv.purpose||'';
-      const editTitle=turretViewMode==='default'?'デフォルト編集':'入替';
+      const editTitle=turretViewMode==='default'?'デフォルト編集':'操作選択';
       el.innerHTML=`${editorBadge}
         <div class="sdot"></div>
         <div class="s-ico">${ic(dsh)}</div>
