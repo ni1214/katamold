@@ -356,14 +356,16 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 }
 .wiz-modal{
   position:fixed;
-  top:86px;
-  right:14px;
+  top:20px;
+  left:20px;
   width:min(500px,calc(100vw - 20px));
   max-width:none;
   max-height:calc(100vh - 104px);
   z-index:700;
   padding:14px;
 }
+.wiz-head{cursor:grab;user-select:none;touch-action:none}
+.wiz-head:active{cursor:grabbing}
 .wiz-body{background:var(--steel);border:1px solid var(--border);border-radius:6px;padding:12px;line-height:1.75;
   font-size:calc(11px * var(--font-scale));color:var(--text);min-height:145px;max-height:calc(100vh - 330px);overflow:auto}
 .wiz-body h4{font-size:calc(12px * var(--font-scale));color:var(--accent);margin:0 0 6px}
@@ -374,11 +376,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 .wiz-step{font-size:calc(10px * var(--font-scale));color:var(--text-dim)}
 @media (max-width:900px){
   .wiz-modal{
-    top:auto;
-    right:10px;
-    left:10px;
-    bottom:10px;
-    width:auto;
+    width:min(500px,calc(100vw - 20px));
     max-height:62vh;
   }
   .wiz-body{max-height:calc(62vh - 175px)}
@@ -749,8 +747,10 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
   <div class="wiz-spotlight" id="wizSpotlight" style="display:none"></div>
   <div class="wiz-focus-tag" id="wizFocusTag" style="display:none"></div>
   <div class="modal wiz-modal">
-    <h3>🧭 はじめての方向けガイド</h3>
-    <p id="wizSub">この画面の基本操作を順に説明します。</p>
+    <div class="wiz-head" id="wizHead" title="ドラッグして移動">
+      <h3>🧭 はじめての方向けガイド</h3>
+      <p id="wizSub">この画面の基本操作を順に説明します。</p>
+    </div>
     <div class="wiz-body" id="wizBody"></div>
     <div class="fg" id="wizPrefWrap" style="display:none;margin-top:8px;margin-bottom:0">
       <label style="display:flex;align-items:center;gap:8px;margin-bottom:0">
@@ -762,6 +762,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
       <div class="wiz-step" id="wizStep"></div>
       <div style="display:flex;gap:8px">
         <button class="btn" id="wizPrevBtn" type="button" onclick="wizardPrev()">◀ 戻る</button>
+        <button class="btn" type="button" onclick="centerOnboardingWizard(true)">中央へ</button>
         <button class="btn" type="button" onclick="closeOnboardingWizard()">閉じる</button>
         <button class="btn primary" id="wizNextBtn" type="button" onclick="wizardNext()">次へ ▶</button>
       </div>
@@ -1095,6 +1096,12 @@ let autoAcquireInFlight=false;
 let onboardingStep=0;
 let onboardingHighlightTimer=null;
 let onboardingTrackingBound=false;
+let onboardingModalDragged=false;
+let onboardingDragActive=false;
+let onboardingDragPointerId=null;
+let onboardingDragOffsetX=0;
+let onboardingDragOffsetY=0;
+let onboardingDragBound=false;
 // 共有編集ロック用セッションIDと編集モードフラグ
 let sessionId = Math.random().toString(36).substr(2, 9);
 let editing = false;
@@ -2086,6 +2093,18 @@ function refreshOnboardingHighlight(allowScroll=false){
 }
 
 function handleOnboardingViewportChange(){
+  const ov=document.getElementById('wizOv');
+  if(ov&&ov.classList.contains('open')){
+    if(onboardingModalDragged){
+      const modal=getOnboardingModalEl();
+      if(modal){
+        const r=modal.getBoundingClientRect();
+        setOnboardingModalPosition(r.left,r.top);
+      }
+    }else{
+      centerOnboardingWizard(false);
+    }
+  }
   refreshOnboardingHighlight(false);
 }
 
@@ -2101,6 +2120,84 @@ function unbindOnboardingHighlightTracking(){
   window.removeEventListener('resize',handleOnboardingViewportChange);
   document.removeEventListener('scroll',handleOnboardingViewportChange,true);
   onboardingTrackingBound=false;
+}
+
+function getOnboardingModalEl(){
+  return document.querySelector('#wizOv .wiz-modal');
+}
+
+function clampOnboardingModalPosition(left,top){
+  const modal=getOnboardingModalEl();
+  if(!modal) return {left,top};
+  const margin=8;
+  const maxLeft=Math.max(margin,window.innerWidth-modal.offsetWidth-margin);
+  const maxTop=Math.max(margin,window.innerHeight-modal.offsetHeight-margin);
+  return {
+    left:Math.min(Math.max(Math.round(left),margin),maxLeft),
+    top:Math.min(Math.max(Math.round(top),margin),maxTop)
+  };
+}
+
+function setOnboardingModalPosition(left,top){
+  const modal=getOnboardingModalEl();
+  if(!modal) return;
+  const p=clampOnboardingModalPosition(left,top);
+  modal.style.left=`${p.left}px`;
+  modal.style.top=`${p.top}px`;
+}
+
+function centerOnboardingWizard(resetDragged=false){
+  const modal=getOnboardingModalEl();
+  if(!modal) return;
+  const left=(window.innerWidth-modal.offsetWidth)/2;
+  const top=(window.innerHeight-modal.offsetHeight)/2;
+  setOnboardingModalPosition(left,top);
+  if(resetDragged) onboardingModalDragged=false;
+  refreshOnboardingHighlight(false);
+}
+
+function startOnboardingModalDrag(e){
+  if(e.button!==0) return;
+  const head=document.getElementById('wizHead');
+  const modal=getOnboardingModalEl();
+  if(!head||!modal) return;
+  const ov=document.getElementById('wizOv');
+  if(!ov||!ov.classList.contains('open')) return;
+  onboardingDragActive=true;
+  onboardingDragPointerId=e.pointerId;
+  onboardingModalDragged=true;
+  const rect=modal.getBoundingClientRect();
+  onboardingDragOffsetX=e.clientX-rect.left;
+  onboardingDragOffsetY=e.clientY-rect.top;
+  if(head.setPointerCapture){
+    try{ head.setPointerCapture(e.pointerId); }catch(err){}
+  }
+  e.preventDefault();
+}
+
+function moveOnboardingModalDrag(e){
+  if(!onboardingDragActive) return;
+  if(onboardingDragPointerId!==null&&e.pointerId!==onboardingDragPointerId) return;
+  setOnboardingModalPosition(e.clientX-onboardingDragOffsetX,e.clientY-onboardingDragOffsetY);
+  refreshOnboardingHighlight(false);
+}
+
+function endOnboardingModalDrag(e){
+  if(!onboardingDragActive) return;
+  if(e&&onboardingDragPointerId!==null&&e.pointerId!==onboardingDragPointerId) return;
+  onboardingDragActive=false;
+  onboardingDragPointerId=null;
+}
+
+function bindOnboardingModalDrag(){
+  if(onboardingDragBound) return;
+  const head=document.getElementById('wizHead');
+  if(!head) return;
+  head.addEventListener('pointerdown',startOnboardingModalDrag);
+  window.addEventListener('pointermove',moveOnboardingModalDrag);
+  window.addEventListener('pointerup',endOnboardingModalDrag);
+  window.addEventListener('pointercancel',endOnboardingModalDrag);
+  onboardingDragBound=true;
 }
 
 function renderOnboardingStep(){
@@ -2135,13 +2232,18 @@ function openOnboardingWizard(force=false){
   const ov=document.getElementById('wizOv');
   if(!ov) return;
   onboardingStep=0;
+  onboardingModalDragged=false;
+  endOnboardingModalDrag();
   ov.classList.add('open');
   bindOnboardingHighlightTracking();
+  bindOnboardingModalDrag();
   renderOnboardingStep();
+  requestAnimationFrame(()=>centerOnboardingWizard(true));
 }
 
 function closeOnboardingWizard(){
   applyOnboardingPreferenceFromUi();
+  endOnboardingModalDrag();
   if(onboardingHighlightTimer){
     clearTimeout(onboardingHighlightTimer);
     onboardingHighlightTimer=null;
