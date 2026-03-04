@@ -73,6 +73,14 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
   color:var(--text-dim)!important;
   background:var(--steel)!important;
 }
+.save-btn-fixed{
+  width:calc(220px * var(--font-scale));
+  min-width:calc(220px * var(--font-scale));
+  max-width:calc(220px * var(--font-scale));
+  justify-content:center;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
 .print-icon-btn{
   width:calc(38px * var(--font-scale));
   min-width:calc(38px * var(--font-scale));
@@ -521,7 +529,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
       <!-- 編集モードの切替ボタン -->
       <button class="btn warn" id="editBtn" onclick="startEditing()" style="display:none;">✏️ 編集開始</button>
       <button class="btn ok" id="endBtn" onclick="endEditing()" disabled>✔ 編集終了（解放）</button>
-      <button id="saveJsonBtn" class="btn ok" onclick="driveSaveNow(true)" style="transition:all .2s">☁ Drive保存</button>
+      <button id="saveJsonBtn" class="btn ok save-btn-fixed" onclick="driveSaveNow(true)" style="transition:all .2s">☁ Drive保存</button>
       <button class="btn" id="amadaLinkBtn" onclick="openAmadaCatalog()">🔗 AMADA金型</button>
       <button class="btn icon-btn" id="guideBtn" onclick="openGuideOv()" title="ステーション表" aria-label="ステーション表">📘</button>
       <button class="btn icon-btn" id="helpWizardBtn" onclick="openOnboardingWizard(true)" title="使い方" aria-label="使い方">❓</button>
