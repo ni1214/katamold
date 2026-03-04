@@ -1305,9 +1305,10 @@ function buildPrintRows(){
     const aSize=baseNew?(s.size||'―'):(s.nSize||'―');
     const noBefore=baseNew?'―':currentNo;
     const noAfter=baseNew?currentNo:(s.nNo||'CUSTOM');
+    const moldNoCell=st2==='new-a'?'新規':`${String(noBefore)} → ${String(noAfter)}`;
     const stLabel=`${s.st}(${ST[s.st]?.range||''})`;
     return `<tr>
-      <td>${escHtml(String(noBefore))} → ${escHtml(String(noAfter))}</td>
+      <td>${escHtml(moldNoCell)}</td>
       <td>${escHtml(stLabel)}</td>
       <td>${escHtml(`${bShape} → ${aShape}`)}</td>
       <td>${escHtml(`${bSize} → ${aSize}`)}</td>
