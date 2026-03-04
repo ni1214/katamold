@@ -68,6 +68,14 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
   justify-content:center;
   font-size:calc(16px * var(--font-scale));
 }
+.icon-btn{
+  width:calc(38px * var(--font-scale));
+  min-width:calc(38px * var(--font-scale));
+  height:calc(34px * var(--font-scale));
+  padding:0;
+  justify-content:center;
+  font-size:calc(16px * var(--font-scale));
+}
 .h-filterbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid rgba(42,63,95,.55);padding-top:8px}
 .ro-notice{display:none;background:rgba(255,68,68,.12);border-bottom:1px solid rgba(255,68,68,.35);
   color:#ffb3b3;padding:8px 14px;font-size:calc(12px * var(--font-scale));font-weight:600;letter-spacing:.02em}
@@ -502,8 +510,8 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
       <button class="btn ok" id="endBtn" onclick="endEditing()" style="display:none;">✔ 編集終了（解放）</button>
       <button id="saveJsonBtn" class="btn ok" onclick="driveSaveNow(true)" style="transition:all .2s">☁ Drive保存</button>
       <button class="btn" id="amadaLinkBtn" onclick="openAmadaCatalog()">🔗 AMADA金型</button>
-      <button class="btn" id="guideBtn" onclick="openGuideOv()">📘 ステーション表</button>
-      <button class="btn" id="helpWizardBtn" onclick="openOnboardingWizard(true)">❓ 使い方</button>
+      <button class="btn icon-btn" id="guideBtn" onclick="openGuideOv()" title="ステーション表" aria-label="ステーション表">📘</button>
+      <button class="btn icon-btn" id="helpWizardBtn" onclick="openOnboardingWizard(true)" title="使い方" aria-label="使い方">❓</button>
       <button class="btn" onclick="openSaveModal()" style="font-size:calc(11px * var(--font-scale))">☁ Drive同期・その他</button>
       <button class="btn primary print-icon-btn" onclick="doPrint()" title="印刷・PDF" aria-label="印刷・PDF">🖨️</button>
     </div>
