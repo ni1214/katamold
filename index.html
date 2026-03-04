@@ -1173,6 +1173,9 @@ function normalizeSlotMeta(s){
   if(s.purpose===undefined||s.purpose===null) s.purpose='';
   if('nPurpose' in s && s.nPurpose===null) s.nPurpose='';
   if('oPurpose' in s && s.oPurpose===null) s.oPurpose='';
+  if(typeof s.originEmpty!=='boolean'){
+    s.originEmpty=(s.shape==='―')||(Number(s.no)===0);
+  }
   if(!['lock','change','check'].includes(s.baseStatus)) s.baseStatus='check';
 }
 
@@ -1286,14 +1289,17 @@ function buildPrintRows(){
     </tr>`;
   }).join('');
 
-  const changed=sorted.filter(s=>s.nShape);
+  const changed=sorted.filter(s=>['replace','new-a'].includes(slotStat(s)));
   const repRows=changed.map(s=>{
-    const bShape=s.oShape||s.shape||'―';
-    const bSize=s.oSize||s.size||'―';
-    const aShape=s.nShape||'―';
-    const aSize=s.nSize||'―';
-    const noBefore=s.no||'―';
-    const noAfter=s.nNo||'CUSTOM';
+    const st2=slotStat(s);
+    const baseNew=(st2==='new-a'&&!s.nShape&&isBaseNewSlot(s));
+    const currentNo=(s.no===0||s.no===undefined||s.no===null)?'―':s.no;
+    const bShape=baseNew?'―':(s.oShape||s.shape||'―');
+    const bSize=baseNew?'―':(s.oSize||s.size||'―');
+    const aShape=baseNew?(s.shape||'―'):(s.nShape||'―');
+    const aSize=baseNew?(s.size||'―'):(s.nSize||'―');
+    const noBefore=baseNew?'―':currentNo;
+    const noAfter=baseNew?currentNo:(s.nNo||'CUSTOM');
     const stLabel=`${s.st}(${ST[s.st]?.range||''})`;
     return `<tr>
       <td>${escHtml(String(noBefore))} → ${escHtml(String(noAfter))}</td>
@@ -1398,7 +1404,8 @@ function addEmptySlot(st){
     shape:'―',
     size:'―',
     detail:'空き',
-    purpose:''
+    purpose:'',
+    originEmpty:true
   });
   renderAll();
   toast(`✅ ${ST[st].name} に空スロット Sl.${num} を追加しました`,'ok');
@@ -1432,9 +1439,15 @@ function removeEmptySlot(st){
   toast(`↺ ${ST[st].name} の空スロット Sl.${removed.num} を削除しました`,'info');
 }
 
+function isBaseNewSlot(s){
+  if(!s) return false;
+  return Boolean(s.originEmpty)&&s.shape!=='―'&&!s.nShape;
+}
+
 function slotStat(s){
   if(s.shape==='―'&&!s.nShape) return 'empty';
   if(s.nShape) return s.shape==='―'?'new-a':'replace';
+  if(isBaseNewSlot(s)) return 'new-a';
   return 'keep';
 }
 
@@ -1693,7 +1706,7 @@ function updateStats(){
 }
 
 function renderLog(){
-  const ch=slots.filter(s=>s.nShape);
+  const ch=slots.filter(s=>['replace','new-a'].includes(slotStat(s)));
   const le=document.getElementById('le'), lt=document.getElementById('lt'), lb=document.getElementById('lb');
   if(!ch.length){le.style.display='';lt.style.display='none';return;}
   le.style.display='none'; lt.style.display='';
@@ -1701,18 +1714,25 @@ function renderLog(){
   lb.innerHTML=ch.map(s=>{
     n++;
     const st2=slotStat(s);
+    const baseNew=(st2==='new-a'&&!s.nShape&&isBaseNewSlot(s));
     const badge=st2==='replace'?'<span class="b-rep">🔄 入替</span>':'<span class="b-new">✨ 新規</span>';
     const idx=slots.indexOf(s);
-    const purp = s.nPurpose || s.purpose || '';
+    const purp=baseNew?(s.purpose||''):(s.nPurpose||s.purpose||'');
+    const slotNo=(s.no===0||s.no===undefined||s.no===null)?'―':s.no;
+    const oldShape=baseNew?'空き':(s.oShape||'空き');
+    const oldSize=baseNew?'':(s.oSize||'');
+    const newShape=baseNew?(s.shape||'―'):(s.nShape||'―');
+    const newSize=baseNew?(s.size||'―'):(s.nSize||'―');
+    const newDetail=baseNew?(s.detail||''):(s.nDetail||'');
     const shownEditor=displayName(s.editor);
     return `<tr>
       <td style="color:var(--text-dim)">${n}</td>
       <td style="font-size:calc(9px * var(--font-scale))">${ST[s.st].name}</td>
-      <td style="color:var(--accent);font-size:calc(9px * var(--font-scale))">No.${s.no}/Sl.${s.num}</td>
-      <td><span class="old">${s.oShape||'空き'} ${s.oSize||''}</span></td>
+      <td style="color:var(--accent);font-size:calc(9px * var(--font-scale))">No.${slotNo}/Sl.${s.num}</td>
+      <td><span class="old">${oldShape} ${oldSize}</span></td>
       <td style="color:var(--text-dim)">→</td>
-      <td><span class="nw">${s.nShape} ${s.nSize}</span></td>
-      <td style="font-size:calc(9px * var(--font-scale));color:var(--text-dim)">${escHtml(s.nDetail||'')}</td>
+      <td><span class="nw">${newShape} ${newSize}</span></td>
+      <td style="font-size:calc(9px * var(--font-scale));color:var(--text-dim)">${escHtml(newDetail)}</td>
       <td style="font-size:calc(9px * var(--font-scale));color:var(--text-dim)">${escHtml(purp)}</td>
       <td>${badge}</td>
       <td style="font-size:calc(9px * var(--font-scale));color:${s.editorColor||'var(--text-dim)'}">${shownEditor?`● ${escHtml(shownEditor)}`:'―'}</td>
@@ -1856,6 +1876,19 @@ function doRestore(e,idx){
   if(!editing){ toast('現在他のユーザーが編集中です。読み取り専用です','warn'); return; }
   e.stopPropagation();
   const s=slots[idx];
+  if(isBaseNewSlot(s)){
+    s.no=0;
+    s.shape='―';
+    s.size='―';
+    s.detail='空き';
+    s.purpose='';
+    s.originEmpty=true;
+    s.baseStatus='check';
+    ['nPurpose','oPurpose','editor','editorColor','at','note'].forEach(k=>{ try{ delete s[k]; }catch(e){} });
+    renderAll();
+    toast('↩ 空きスロットに戻しました','info');
+    return;
+  }
   clearSlotReplacementData(s);
   renderAll();
   toast('↩ 元の金型に戻しました','info');
@@ -1989,11 +2022,13 @@ function saveBaseSlot(){
 
   const nextSize=(sh==='―'||(sizeOptional&&!sizeInput))?'―':sizeInput;
   const nextDetail=(sh==='―')?(detailInput||'空き'):(detailInput||'―');
+  const wasOriginEmpty=Boolean(s.originEmpty)||s.shape==='―';
   s.no=moldNo;
   s.shape=sh;
   s.size=nextSize;
   s.detail=nextDetail;
   s.purpose=purpose;
+  s.originEmpty=(sh==='―')?true:wasOriginEmpty;
   s.baseStatus=['lock','change','check'].includes(baseStatus)?baseStatus:'check';
   // 入替データがある場合は、復元先（元データ）を今回のデフォルト値に更新
   if(s.nShape){
