@@ -1046,6 +1046,7 @@ const ONBOARDING_STEPS=[
       <ul>
         <li>スロットをクリックすると、まず「既存編集」か「入替候補追加/選択」を選べます。</li>
         <li>同じ画面で「ロック / 要確認 / 変更推奨」のステータスを直接切替できます。</li>
+        <li>候補は同じステーション内のスロットにのみ適用できます。</li>
         <li>「既存編集」はデフォルト情報の修正、「入替候補追加/選択」は入替実行に使います。</li>
         <li>ロックステータスのスロットは入替できません。</li>
       </ul>`
@@ -1320,7 +1321,15 @@ function syncCandidateState(){
       });
     }
   }
-  used=new Set([...used].filter(id=>ids.has(id)));
+  const usedFromSlots=new Set();
+  if(Array.isArray(slots)){
+    slots.forEach(s=>{
+      if(!s||!s.prevCid) return;
+      if(!ids.has(s.prevCid)) return;
+      usedFromSlots.add(s.prevCid);
+    });
+  }
+  used=usedFromSlots;
   const maxCu=cands.reduce((mx,c)=>{
     const m=String(c.id||'').match(/^cu-(\d+)$/);
     if(!m) return mx;
@@ -1328,6 +1337,16 @@ function syncCandidateState(){
     return Number.isFinite(n)?Math.max(mx,n):mx;
   },999);
   cidCnt=Math.max(Number(cidCnt)||1000,maxCu+1);
+}
+
+function isCandidateUsedElsewhere(cid,idx){
+  if(!cid||!Array.isArray(slots)) return false;
+  return slots.some((s,i)=>i!==idx&&s&&s.prevCid===cid);
+}
+
+function isCandidateUsedAnywhere(cid){
+  if(!cid||!Array.isArray(slots)) return false;
+  return slots.some(s=>s&&s.prevCid===cid);
 }
 
 function initSlots(){
@@ -2092,6 +2111,15 @@ function applyC(idx, cid, note='', purpose=undefined){
   if(!editing){ toast('現在他のユーザーが編集中です。読み取り専用です','warn'); return; }
   const c=cands.find(x=>x.id===cid); if(!c) return;
   const s=slots[idx];
+  if(!s) return;
+  if(c.range!==s.st){
+    toast(`${ST[s.st].name} では ${c.range}候補を選択できません`,'warn');
+    return;
+  }
+  if(isCandidateUsedElsewhere(c.id,idx)){
+    toast('この候補は他スロットで使用中です。重複して入替できません','warn');
+    return;
+  }
   if(!guardSlotReplace(s)) return;
   if(c.shape==='―'&&s.shape==='―'&&!s.nShape){
     toast(`スロット${s.num} は既に空きです`,'info');
@@ -2334,17 +2362,17 @@ function openSlotOv(e,idx){
   sep.textContent='— 候補リストから選択 —';
   ml.appendChild(sep);
 
-  const list=[...cands.filter(c=>c.range===s.st),...cands.filter(c=>c.range!==s.st)];
+  const list=cands.filter(c=>c.range===s.st);
   if(!list.length){
     const empty=document.createElement('div');
     empty.className='log-empty';
     empty.style.padding='12px 8px';
-    empty.textContent='候補がありません。上の「任意サイズ候補を追加する」から追加してください。';
+    empty.textContent=`${ST[s.st].name} の候補がありません。上の「任意サイズ候補を追加する」から追加してください。`;
     ml.appendChild(empty);
   }
 
   list.forEach(c=>{
-    const isU=used.has(c.id)&&c.id!==s.prevCid;
+    const isU=isCandidateUsedElsewhere(c.id,idx);
     const isCustom=c.id.startsWith('cu-');
     const d=document.createElement('div');
     d.className=`mop ${isU?'used':''}`;
@@ -2373,9 +2401,15 @@ function openCandModal(cid){
     toast('候補の適用は「入替表示」で実行します。','info');
   }
   const c=cands.find(x=>x.id===cid); if(!c) return;
-  document.getElementById('sm-sub').textContent=`「${c.shape} ${c.size}」を設置するスロットを選択`;
+  if(isCandidateUsedAnywhere(c.id)){
+    toast('この候補は既に他スロットで使用中です','warn');
+    return;
+  }
+  document.getElementById('sm-sub').textContent=`「${c.shape} ${c.size}」を設置するスロットを選択（${ST[c.range]?.name||c.range}）`;
   const ml=document.getElementById('sm-list'); ml.innerHTML='';
+  let shown=0;
   slots.forEach((s,idx)=>{
+    if(s.st!==c.range) return;
     const locked=isSlotLocked(s);
     const d=document.createElement('div'); d.className=`mop ${locked?'locked':''}`;
     d.innerHTML=`<div class="mi">${ic(s.nShape||s.shape)}</div>
@@ -2384,7 +2418,15 @@ function openCandModal(cid){
       <div class="cst_">${s.st}</div>`;
     d.addEventListener('click',()=>{if(!locked){applyC(idx,cid);closeOv('slotOv');}});
     ml.appendChild(d);
+    shown++;
   });
+  if(!shown){
+    const empty=document.createElement('div');
+    empty.className='log-empty';
+    empty.style.padding='12px 8px';
+    empty.textContent='この候補を適用できる同一ステーションのスロットがありません。';
+    ml.appendChild(empty);
+  }
   document.getElementById('slotOv').classList.add('open');
 }
 
