@@ -614,7 +614,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
       <div class="cf-t">✏️ 任意サイズを追加</div>
       <div class="cf-r"><label>形状</label>
         <select id="cf-sh"><option>丸</option><option>角</option><option>長角</option><option>長丸</option>
-        <option>バーリング</option><option>サラ</option><option>刻印</option><option>ポンチ</option><option>特型</option><option>その他</option></select></div>
+        <option>バーリング</option><option>サラ</option><option>刻印</option><option>ポンチ</option><option>特型</option><option>その他</option><option value="―">空きスロット</option></select></div>
       <div class="cf-r"><label>サイズ</label><input type="text" id="cf-sz" placeholder="例: 6.5Φ / 12x8"></div>
       <div class="cf-r"><label>詳細</label><input type="text" id="cf-dt" placeholder="例: CL=0.30"></div>
       <div class="cf-r"><label>対応ST</label>
@@ -737,7 +737,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
       <div class="fg"><label>形状 *</label>
         <select id="cm-sh" onchange="upPv()">
           <option>丸</option><option>角</option><option>長角</option><option>長丸</option>
-          <option>バーリング</option><option>サラ</option><option>刻印</option><option>ポンチ</option><option>特型</option><option>その他</option>
+          <option>バーリング</option><option>サラ</option><option>刻印</option><option>ポンチ</option><option>特型</option><option>その他</option><option value="―">空きスロット</option>
         </select></div>
       <div class="fg"><label>サイズ *</label>
         <input type="text" id="cm-sz" placeholder="例: 6.5Φ" oninput="upPv()">
@@ -1948,12 +1948,16 @@ function addCustomCand(){
   if(!editing){ toast('現在他のユーザーが編集中です。読み取り専用です','warn'); return; }
   const sh=document.getElementById('cf-sh').value, sz=document.getElementById('cf-sz').value.trim();
   const dt=document.getElementById('cf-dt').value.trim(), st=document.getElementById('cf-st').value;
-  if(!sz){toast('サイズを入力してください','warn');return;}
-  cands.unshift({id:'cu-'+(cidCnt++),shape:sh,size:sz,detail:dt,range:st,no:'CUSTOM'});
+  const isEmptyCand=(sh==='―');
+  const shapeLabel=isEmptyCand?'空きスロット':sh;
+  if(!sz&&!isEmptyCand){toast('サイズを入力してください','warn');return;}
+  const nextSize=isEmptyCand?'―':sz;
+  const nextDetail=isEmptyCand?(dt||'空き'):dt;
+  cands.unshift({id:'cu-'+(cidCnt++),shape:sh,size:nextSize,detail:nextDetail,range:st,no:'CUSTOM'});
   document.getElementById('cf-sz').value=''; document.getElementById('cf-dt').value='';
   syncCandidateState();
   queueAutoSave();
-  renderCands(); toast(`✅ ${sh} ${sz} をリストに追加しました`,'ok');
+  renderCands(); toast(`✅ ${shapeLabel} ${nextSize} をリストに追加しました`,'ok');
 }
 
 function removeCandidateById(id){
@@ -1996,6 +2000,10 @@ function applyC(idx, cid, note='', purpose=undefined){
   const c=cands.find(x=>x.id===cid); if(!c) return;
   const s=slots[idx];
   if(!guardSlotReplace(s)) return;
+  if(c.shape==='―'&&s.shape==='―'&&!s.nShape){
+    toast(`スロット${s.num} は既に空きです`,'info');
+    return;
+  }
   if(s.prevCid) used.delete(s.prevCid);
   if(!s.oShape){s.oShape=s.shape;s.oSize=s.size;s.oDetail=s.detail;}
   s.nShape=c.shape; s.nSize=c.size; s.nDetail=c.detail;
@@ -2325,11 +2333,16 @@ function upPv(){
   if(actIdx===null||actIdx===undefined) return;
   const s=slots[actIdx];
   if(!s) return;
-  const sh=document.getElementById('cm-sh').value, sz=document.getElementById('cm-sz').value||'―';
-  const dt=document.getElementById('cm-dt').value;
+  const sh=document.getElementById('cm-sh').value;
+  const rawSz=document.getElementById('cm-sz').value;
+  const rawDt=document.getElementById('cm-dt').value;
+  const isEmptyCand=(sh==='―');
+  const shapeLabel=isEmptyCand?'空きスロット':sh;
+  const sz=isEmptyCand?'―':(rawSz||'―');
+  const dt=isEmptyCand?(rawDt||'空き'):rawDt;
   document.getElementById('pv-area').style.display='block';
   document.getElementById('pv-old').textContent=`追加先: ${ST[s.st].name} Sl.${s.num}`;
-  document.getElementById('pv-new').textContent=`${sh} ／ ${sz}${dt?' ／ '+dt:''}`;
+  document.getElementById('pv-new').textContent=`${shapeLabel} ／ ${sz}${dt?' ／ '+dt:''}`;
 }
 
 function addCmCandidate(){
@@ -2340,21 +2353,25 @@ function addCmCandidate(){
   const sh=document.getElementById('cm-sh').value;
   const sz=document.getElementById('cm-sz').value.trim();
   const dt=document.getElementById('cm-dt').value.trim();
-  if(!sz){toast('サイズを入力してください','warn');return;}
+  const isEmptyCand=(sh==='―');
+  const shapeLabel=isEmptyCand?'空きスロット':sh;
+  if(!sz&&!isEmptyCand){toast('サイズを入力してください','warn');return;}
+  const nextSize=isEmptyCand?'―':sz;
+  const nextDetail=isEmptyCand?(dt||'空き'):dt;
 
   if(cmEditCandidateId){
     const target=cands.find(x=>x.id===cmEditCandidateId);
     if(!target){ toast('候補が見つかりません','warn'); closeCmOv(); return; }
     target.shape=sh;
-    target.size=sz;
-    target.detail=dt;
+    target.size=nextSize;
+    target.detail=nextDetail;
     target.no='CUSTOM';
     syncCandidateState();
     queueAutoSave();
     renderCands();
     closeCmOv();
     openSlotOv(null,actIdx);
-    toast(`✅ 候補 ${sh} ${sz} を更新しました`,'ok');
+    toast(`✅ 候補 ${shapeLabel} ${nextSize} を更新しました`,'ok');
     return;
   }
 
@@ -2362,8 +2379,8 @@ function addCmCandidate(){
   cands.unshift({
     id,
     shape:sh,
-    size:sz,
-    detail:dt,
+    size:nextSize,
+    detail:nextDetail,
     range:s.st,
     no:'CUSTOM'
   });
@@ -2372,7 +2389,7 @@ function addCmCandidate(){
   renderCands();
   closeCmOv();
   openSlotOv(null,actIdx);
-  toast(`✅ 候補 ${sh} ${sz} を追加しました。リストから選択してください`,'ok');
+  toast(`✅ 候補 ${shapeLabel} ${nextSize} を追加しました。リストから選択してください`,'ok');
 }
 function saveSlotPurposeOnly(){
   if(actIdx===null||actIdx===undefined) return;
