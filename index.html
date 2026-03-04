@@ -1343,7 +1343,8 @@ function buildPrintRows(){
     const st2=slotStat(s);
     const shape=s.nShape||s.shape||'―';
     const size=s.nSize||s.size||'―';
-    const moldNo=s.nNo||s.no||'―';
+    const nextNoRaw=(s.nNo===undefined||s.nNo===null)?'':String(s.nNo).trim();
+    const moldNo=(nextNoRaw&&nextNoRaw.toUpperCase()!=='CUSTOM')?nextNoRaw:(s.no||'―');
     const stLabel=`${s.st}(${ST[s.st]?.range||''})`;
     return `<tr class="st-${st2}">
       <td>${i+1}</td>
@@ -1363,9 +1364,7 @@ function buildPrintRows(){
     const bSize=baseNew?'―':(s.oSize||s.size||'―');
     const aShape=baseNew?(s.shape||'―'):(s.nShape||'―');
     const aSize=baseNew?(s.size||'―'):(s.nSize||'―');
-    const noBefore=baseNew?'―':currentNo;
-    const noAfter=baseNew?currentNo:(s.nNo||'CUSTOM');
-    const moldNoCell=st2==='new-a'?'新規':`${String(noBefore)} → ${String(noAfter)}`;
+    const moldNoCell=st2==='new-a'?'新規':String(currentNo);
     const stLabel=`${s.st}(${ST[s.st]?.range||''})`;
     return `<tr class="st-${st2}">
       <td>${i+1}</td>
