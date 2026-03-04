@@ -1350,9 +1350,9 @@ function buildPrintRows(){
 
   const allRows=sorted.map((s,i)=>{
     const st2=slotStat(s);
-    const shape=s.nShape||s.shape||'―';
-    const size=s.nSize||s.size||'―';
-    const detail=s.nDetail||s.detail||'';
+    const shape=pickOverlayValue(s,'nShape','shape')||'―';
+    const size=pickOverlayValue(s,'nSize','size')||'―';
+    const detail=pickOverlayValue(s,'nDetail','detail')||'';
     const sizeCell=withDetail(size,detail);
     const nextNoRaw=(s.nNo===undefined||s.nNo===null)?'':String(s.nNo).trim();
     const moldNo=(nextNoRaw&&nextNoRaw.toUpperCase()!=='CUSTOM')?nextNoRaw:(s.no||'―');
@@ -1374,9 +1374,9 @@ function buildPrintRows(){
     const bShape=baseNew?'―':(s.oShape||s.shape||'―');
     const bSize=baseNew?'―':(s.oSize||s.size||'―');
     const bDetail=baseNew?'':(s.oDetail||s.detail||'');
-    const aShape=baseNew?(s.shape||'―'):(s.nShape||'―');
-    const aSize=baseNew?(s.size||'―'):(s.nSize||'―');
-    const aDetail=baseNew?(s.detail||''):(s.nDetail||'');
+    const aShape=baseNew?(s.shape||'―'):(pickOverlayValue(s,'nShape','shape')||'―');
+    const aSize=baseNew?(s.size||'―'):(pickOverlayValue(s,'nSize','size')||'―');
+    const aDetail=baseNew?(s.detail||''):(pickOverlayValue(s,'nDetail','detail')||'');
     const bSizeCell=withDetail(bSize,bDetail);
     const aSizeCell=withDetail(aSize,aDetail);
     const moldNoCell=st2==='new-a'?'新規':String(currentNo);
@@ -1554,6 +1554,11 @@ function isSlotLocked(s){
   return getBaseStatus(s)==='lock';
 }
 
+function pickOverlayValue(s,nextKey,baseKey){
+  if(s&&Object.prototype.hasOwnProperty.call(s,nextKey)) return s[nextKey];
+  return s?s[baseKey]:'';
+}
+
 function guardSlotReplace(s){
   if(!s) return false;
   if(!isSlotLocked(s)) return true;
@@ -1571,10 +1576,10 @@ function slotDisplay(s){
     };
   }
   return {
-    shape:s.nShape||s.shape||'―',
-    size:s.nSize||s.size||'―',
-    detail:s.nDetail||s.detail||'',
-    purpose:s.nPurpose||s.purpose||''
+    shape:pickOverlayValue(s,'nShape','shape')||'―',
+    size:pickOverlayValue(s,'nSize','size')||'―',
+    detail:pickOverlayValue(s,'nDetail','detail')||'',
+    purpose:pickOverlayValue(s,'nPurpose','purpose')||''
   };
 }
 
@@ -3092,14 +3097,15 @@ function exportCSV(){
   let n=0;
   slots.forEach(s=>{
     const st2=slotStat(s), stl=st2==='keep'?'継続':st2==='replace'?'入替':st2==='new-a'?'新規追加':'空き';
-    const purpose=s.nPurpose||s.purpose||'';
+    const purpose=pickOverlayValue(s,'nPurpose','purpose')||'';
     if(st2==='replace'||st2==='new-a') n++;
     rows.push([
       st2==='replace'||st2==='new-a'?n:'',
       ST[s.st].name, s.no, s.num,
       s.oShape||s.shape, s.oSize||s.size,
-      s.nShape||s.shape, s.nSize||s.size,
-      s.nDetail||s.detail, purpose, stl,
+      pickOverlayValue(s,'nShape','shape')||'―',
+      pickOverlayValue(s,'nSize','size')||'―',
+      pickOverlayValue(s,'nDetail','detail')||'', purpose, stl,
       displayName(s.editor)||'', s.note||'', s.at||''
     ]);
   });
