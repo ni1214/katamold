@@ -376,6 +376,18 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 .slot-action-btn.rep:hover{border-color:var(--accent2)}
 .slot-action-btn.disabled{opacity:.45;cursor:not-allowed}
 .slot-action-note{font-size:calc(10px * var(--font-scale));color:var(--warn);margin-bottom:8px;line-height:1.6}
+.sa-status{margin:8px 0 10px;padding:9px 10px;border:1px solid var(--border);border-radius:7px;background:var(--steel-mid)}
+.sa-status-label{font-size:calc(10px * var(--font-scale));color:var(--text-dim);margin-bottom:7px}
+.sa-status-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.sa-status-btn{padding:7px 8px;border-radius:6px;border:1px solid var(--border);background:var(--steel);color:var(--text);
+  font-size:calc(11px * var(--font-scale));font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;transition:all .12s}
+.sa-status-btn:hover{border-color:var(--accent)}
+.sa-status-btn.active{background:rgba(0,212,255,.14);border-color:var(--accent);color:var(--accent)}
+.sa-status-btn.lock.active{background:rgba(0,212,255,.16);color:var(--accent)}
+.sa-status-btn.change.active{background:rgba(255,107,53,.16);border-color:var(--accent2);color:var(--accent2)}
+.sa-status-btn.check.active{background:rgba(255,225,0,.18);border-color:var(--warn);color:var(--warn)}
+.sa-status-btn:disabled{opacity:.45;cursor:not-allowed}
+.sa-status-hint{margin-top:6px;font-size:calc(10px * var(--font-scale));color:var(--text-dim)}
 /* custom modal */
 .cm-modal{width:470px}
 .fg{margin-bottom:10px}
@@ -580,7 +592,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
           <button class="pf-btn f-replace" data-filter="replace" onclick="setTurretPolicyFilter('replace',this)">入替</button>
           <button class="pf-btn f-new" data-filter="new-a" onclick="setTurretPolicyFilter('new-a',this)">新規</button>
           <button class="pf-btn f-lock" data-filter="lock" onclick="setTurretPolicyFilter('lock',this)">ロック</button>
-          <button class="pf-btn f-change" data-filter="change" onclick="setTurretPolicyFilter('change',this)">要変更</button>
+          <button class="pf-btn f-change" data-filter="change" onclick="setTurretPolicyFilter('change',this)">変更推奨</button>
           <button class="pf-btn f-check" data-filter="check" onclick="setTurretPolicyFilter('check',this)">要確認</button>
           <button class="pf-btn f-empty" data-filter="empty" onclick="setTurretPolicyFilter('empty',this)">空き</button>
         </div>
@@ -705,6 +717,15 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
   <div class="modal slot-action-modal">
     <h3>🧭 スロット操作を選択</h3>
     <p id="sa-sub"></p>
+    <div class="sa-status">
+      <div class="sa-status-label">運用ステータス（ここで直接変更できます）</div>
+      <div class="sa-status-row">
+        <button class="sa-status-btn lock" id="sa-status-lock" onclick="setSlotActionStatus('lock')">ロック</button>
+        <button class="sa-status-btn check" id="sa-status-check" onclick="setSlotActionStatus('check')">要確認</button>
+        <button class="sa-status-btn change" id="sa-status-change" onclick="setSlotActionStatus('change')">変更推奨</button>
+      </div>
+      <div class="sa-status-hint" id="sa-status-hint"></div>
+    </div>
     <div class="slot-action-list">
       <button class="slot-action-btn base" onclick="chooseSlotActionBase()">
         <span class="ttl">🛠 既存金型を編集</span>
@@ -775,7 +796,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
     <div class="fg"><label>運用ステータス</label>
       <select id="bm-status">
         <option value="lock">ロック（継続使用）</option>
-        <option value="change">要変更（使わない）</option>
+        <option value="change">変更推奨（使わない）</option>
         <option value="check">要確認（不明）</option>
       </select>
     </div>
@@ -1011,8 +1032,8 @@ const ONBOARDING_STEPS=[
     body:`<h4>目的の金型を絞る</h4>
       <ul>
         <li>形状フィルターとステーションフィルターで対象を絞れます。</li>
-        <li>状態フィルターで「入替 / 新規 / ロック / 要変更 / 要確認 / 空き」も絞り込めます。</li>
-        <li>「📌固定」をONにすると、状態を複数同時選択できます（例: 要変更 + 要確認 + 空き）。</li>
+        <li>状態フィルターで「入替 / 新規 / ロック / 変更推奨 / 要確認 / 空き」も絞り込めます。</li>
+        <li>「📌固定」をONにすると、状態を複数同時選択できます（例: 変更推奨 + 要確認 + 空き）。</li>
         <li>検索欄では No / 形状 / サイズ / 詳細 を横断検索できます。</li>
       </ul>`
   },
@@ -1024,6 +1045,7 @@ const ONBOARDING_STEPS=[
     body:`<h4>金型の編集ポイント</h4>
       <ul>
         <li>スロットをクリックすると、まず「既存編集」か「入替候補追加/選択」を選べます。</li>
+        <li>同じ画面で「ロック / 要確認 / 変更推奨」のステータスを直接切替できます。</li>
         <li>「既存編集」はデフォルト情報の修正、「入替候補追加/選択」は入替実行に使います。</li>
         <li>ロックステータスのスロットは入替できません。</li>
       </ul>`
@@ -1223,7 +1245,7 @@ let turretShapeFilter='all';
 let turretStationFilter='all';
 let turretPolicyFilter='all';
 const TURRET_POLICY_FILTER_VALUES=['replace','new-a','lock','change','check','empty'];
-const TURRET_POLICY_LABEL_MAP={all:'全状態',replace:'入替','new-a':'新規',lock:'ロック',change:'要変更',check:'要確認',empty:'空き'};
+const TURRET_POLICY_LABEL_MAP={all:'全状態',replace:'入替','new-a':'新規',lock:'ロック',change:'変更推奨',check:'要確認',empty:'空き'};
 let turretPolicyPinMode=false;
 let turretPolicyMultiFilters=[];
 let turretSearchText='';
@@ -1555,7 +1577,7 @@ function getBaseStatus(s){
 
 function getBaseStatusLabel(status){
   if(status==='lock') return 'ロック';
-  if(status==='change') return '要変更';
+  if(status==='change') return '変更推奨';
   return '要確認';
 }
 
@@ -1739,13 +1761,63 @@ function clearTurretSearch(){
   renderTurret();
 }
 
+function syncSlotActionStatusUi(s){
+  const lockBtn=document.getElementById('sa-status-lock');
+  const checkBtn=document.getElementById('sa-status-check');
+  const changeBtn=document.getElementById('sa-status-change');
+  const hint=document.getElementById('sa-status-hint');
+  if(!lockBtn||!checkBtn||!changeBtn) return;
+  const st=getBaseStatus(s);
+  lockBtn.classList.toggle('active',st==='lock');
+  checkBtn.classList.toggle('active',st==='check');
+  changeBtn.classList.toggle('active',st==='change');
+  const ro=!editing;
+  lockBtn.disabled=ro;
+  checkBtn.disabled=ro;
+  changeBtn.disabled=ro;
+  if(hint){
+    hint.textContent=ro
+      ?`現在: ${getBaseStatusLabel(st)}（読み取り専用のため変更できません）`
+      :`現在: ${getBaseStatusLabel(st)}`;
+  }
+}
+
+function setSlotActionStatus(status){
+  if(!['lock','change','check'].includes(status)) return;
+  if(actIdx===null||actIdx===undefined) return;
+  if(!editing){ toast('現在他のユーザーが編集中です。読み取り専用です','warn'); return; }
+  const s=slots[actIdx];
+  if(!s) return;
+  const prev=getBaseStatus(s);
+  if(prev===status){
+    toast(`ステータスは既に「${getBaseStatusLabel(status)}」です`,'info');
+    return;
+  }
+  s.baseStatus=status;
+  s.editor=myName;
+  s.editorColor=myColor;
+  s.at=new Date().toLocaleString('ja-JP');
+  renderAll();
+  syncSlotActionStatusUi(s);
+  const repBtn=document.getElementById('sa-replace-btn');
+  const lockNote=document.getElementById('sa-lock-note');
+  const locked=isSlotLocked(s);
+  if(repBtn){
+    repBtn.disabled=locked;
+    repBtn.classList.toggle('disabled',locked);
+  }
+  if(lockNote) lockNote.style.display=locked?'block':'none';
+  toast(`✅ ステータスを「${getBaseStatusLabel(status)}」に変更しました`,'ok');
+}
+
 function openSlotActionOv(e,idx){
   if(e) e.stopPropagation();
   actIdx=idx;
   const s=slots[idx];
   if(!s) return;
-  const dsh=s.nShape||s.shape||'―';
-  const dsz=s.nSize||s.size||'―';
+  const dv=slotDisplay(s);
+  const dsh=dv.shape||'―';
+  const dsz=dv.size||'―';
   const sub=document.getElementById('sa-sub');
   if(sub) sub.textContent=`${ST[s.st].name} スロット${s.num} — 現在: ${dsh} ${dsz}`;
   const repBtn=document.getElementById('sa-replace-btn');
@@ -1756,6 +1828,7 @@ function openSlotActionOv(e,idx){
     repBtn.classList.toggle('disabled',locked);
   }
   if(lockNote) lockNote.style.display=locked?'block':'none';
+  syncSlotActionStatusUi(s);
   document.getElementById('slotActionOv').classList.add('open');
 }
 
@@ -1767,6 +1840,12 @@ function chooseSlotActionBase(){
 
 function chooseSlotActionReplace(){
   if(actIdx===null||actIdx===undefined) return;
+  const s=slots[actIdx];
+  if(!s) return;
+  if(isSlotLocked(s)){
+    toast(`スロット${s.num} は「ロック」設定のため入替できません`,'warn');
+    return;
+  }
   closeOv('slotActionOv');
   openSlotOv(null,actIdx);
 }
