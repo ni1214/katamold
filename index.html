@@ -60,6 +60,14 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 .btn.warn{border-color:var(--accent2);color:var(--accent2)}
 .btn.warn:hover{background:var(--accent2);color:#fff}
 .btn.on{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700}
+.print-icon-btn{
+  width:calc(38px * var(--font-scale));
+  min-width:calc(38px * var(--font-scale));
+  height:calc(34px * var(--font-scale));
+  padding:0;
+  justify-content:center;
+  font-size:calc(16px * var(--font-scale));
+}
 .h-filterbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid rgba(42,63,95,.55);padding-top:8px}
 .ro-notice{display:none;background:rgba(255,68,68,.12);border-bottom:1px solid rgba(255,68,68,.35);
   color:#ffb3b3;padding:8px 14px;font-size:calc(12px * var(--font-scale));font-weight:600;letter-spacing:.02em}
@@ -497,7 +505,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
       <button class="btn" id="guideBtn" onclick="openGuideOv()">📘 ステーション表</button>
       <button class="btn" id="helpWizardBtn" onclick="openOnboardingWizard(true)">❓ 使い方</button>
       <button class="btn" onclick="openSaveModal()" style="font-size:calc(11px * var(--font-scale))">☁ Drive同期・その他</button>
-      <button class="btn primary" onclick="doPrint()">🖨️ 印刷・PDF</button>
+      <button class="btn primary print-icon-btn" onclick="doPrint()" title="印刷・PDF" aria-label="印刷・PDF">🖨️</button>
     </div>
   </div>
   <div class="h-filterbar no-print">
