@@ -1429,7 +1429,7 @@ function buildPrintRows(){
     const aShapeCell=toShapeLabel(aShape);
     const bSizeCell=toSizeLabel(bSize,bDetail,bShape);
     const aSizeCell=toSizeLabel(aSize,aDetail,aShape);
-    const moldNoCell=st2==='new-a'?'新規スロット':String(currentNo);
+    const moldNoCell=(st2==='new-a'&&String(currentNo)==='―')?'新規スロット':String(currentNo);
     const stLabel=`${s.st}(${ST[s.st]?.range||''})`;
     return `<tr class="st-${st2}">
       <td>${i+1}</td>
