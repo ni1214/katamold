@@ -326,9 +326,14 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 .print-sheet{display:none}
 .pl-box{border:1px solid #333;padding:8px 10px;margin-bottom:10px;background:#fff}
 .pl-title{font-size:12px;font-weight:700;margin-bottom:6px;color:#111}
-.pl-table{width:100%;border-collapse:collapse;font-size:11px}
-.pl-table th,.pl-table td{border:1px solid #222;padding:4px 6px;vertical-align:middle}
+.pl-table{width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed}
+.pl-table th,.pl-table td{border:1px solid #222;padding:3px 4px;vertical-align:middle}
 .pl-table th{background:#2f6f60;color:#fff;font-weight:700}
+.pl-table th:nth-child(1),.pl-table td:nth-child(1){width:8%;text-align:center}
+.pl-table th:nth-child(2),.pl-table td:nth-child(2){width:20%}
+.pl-table th:nth-child(3),.pl-table td:nth-child(3){width:25%}
+.pl-table th:nth-child(4),.pl-table td:nth-child(4){width:23%}
+.pl-table th:nth-child(5),.pl-table td:nth-child(5){width:24%}
 .pl-note{font-size:11px;color:#555;padding:6px 2px}
 
 /* ===== OVERLAYS ===== */
@@ -638,7 +643,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
         <table class="pl-table pl-all">
           <thead>
             <tr>
-              <th>金型No</th><th>ステーション</th><th>形状</th><th>サイズ</th>
+              <th>通し</th><th>金型No</th><th>ステーション</th><th>形状</th><th>サイズ</th>
             </tr>
           </thead>
           <tbody id="plAllBody"></tbody>
@@ -650,7 +655,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
         <table class="pl-table" id="plRepTable">
           <thead>
             <tr>
-              <th>金型No</th><th>ステーション</th><th>形状</th><th>サイズ</th>
+              <th>通し</th><th>金型No</th><th>ステーション</th><th>形状</th><th>サイズ</th>
             </tr>
           </thead>
           <tbody id="plRepBody"></tbody>
@@ -1334,13 +1339,14 @@ function buildPrintRows(){
     return (Number(a.num)||0)-(Number(b.num)||0);
   });
 
-  const allRows=sorted.map(s=>{
+  const allRows=sorted.map((s,i)=>{
     const st2=slotStat(s);
     const shape=s.nShape||s.shape||'―';
     const size=s.nSize||s.size||'―';
     const moldNo=s.nNo||s.no||'―';
     const stLabel=`${s.st}(${ST[s.st]?.range||''})`;
     return `<tr class="st-${st2}">
+      <td>${i+1}</td>
       <td>${escHtml(String(moldNo))}</td>
       <td>${escHtml(stLabel)}</td>
       <td>${escHtml(shape)}</td>
@@ -1349,7 +1355,7 @@ function buildPrintRows(){
   }).join('');
 
   const changed=sorted.filter(s=>['replace','new-a'].includes(slotStat(s)));
-  const repRows=changed.map(s=>{
+  const repRows=changed.map((s,i)=>{
     const st2=slotStat(s);
     const baseNew=(st2==='new-a'&&!s.nShape&&isBaseNewSlot(s));
     const currentNo=(s.no===0||s.no===undefined||s.no===null)?'―':s.no;
@@ -1362,6 +1368,7 @@ function buildPrintRows(){
     const moldNoCell=st2==='new-a'?'新規':`${String(noBefore)} → ${String(noAfter)}`;
     const stLabel=`${s.st}(${ST[s.st]?.range||''})`;
     return `<tr class="st-${st2}">
+      <td>${i+1}</td>
       <td>${escHtml(moldNoCell)}</td>
       <td>${escHtml(stLabel)}</td>
       <td>${escHtml(`${bShape} → ${aShape}`)}</td>
@@ -1396,7 +1403,7 @@ function doPrint(){
   const rows=buildPrintRows();
   const repSection=rows.hasChanged
     ?`<table class="pt"><thead><tr>
-      <th>金型No</th><th>ステーション</th><th>形状</th><th>サイズ</th>
+      <th>通し</th><th>金型No</th><th>ステーション</th><th>形状</th><th>サイズ</th>
     </tr></thead><tbody>${rows.repRows}</tbody></table>`
     :`<div class="empty">入替変更はありません。</div>`;
   const html=`<!doctype html>
@@ -1408,9 +1415,14 @@ h1{font-size:18px;margin:0 0 2px}p{font-size:12px;margin:0}
 .meta{border-bottom:1px solid #333;padding-bottom:6px;margin-bottom:10px}
 .box{border:1px solid #333;padding:8px 10px;margin-bottom:10px}
 .ttl{font-weight:700;margin-bottom:6px}
-.pt{width:100%;border-collapse:collapse;font-size:11px}
-.pt th,.pt td{border:1px solid #222;padding:4px 6px;vertical-align:middle}
+.pt{width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed}
+.pt th,.pt td{border:1px solid #222;padding:3px 4px;vertical-align:middle}
 .pt th{background:#2f6f60;color:#fff}
+.pt th:nth-child(1),.pt td:nth-child(1){width:8%;text-align:center}
+.pt th:nth-child(2),.pt td:nth-child(2){width:20%}
+.pt th:nth-child(3),.pt td:nth-child(3){width:25%}
+.pt th:nth-child(4),.pt td:nth-child(4){width:23%}
+.pt th:nth-child(5),.pt td:nth-child(5){width:24%}
 .pt thead{display:table-header-group}
 .pt tfoot{display:table-footer-group}
 .pt tr{break-inside:avoid;page-break-inside:avoid}
@@ -1427,7 +1439,7 @@ h1{font-size:18px;margin:0 0 2px}p{font-size:12px;margin:0}
 <div class="box">
   <div class="ttl">金型一覧（全体）</div>
   <table class="pt"><thead><tr>
-    <th>金型No</th><th>ステーション</th><th>形状</th><th>サイズ</th>
+    <th>通し</th><th>金型No</th><th>ステーション</th><th>形状</th><th>サイズ</th>
   </tr></thead><tbody>${rows.allRows}</tbody></table>
 </div>
 <div class="box">
