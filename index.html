@@ -497,7 +497,8 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
   .pl-box{break-inside:auto;page-break-inside:auto}
   .pl-table th{background:#2f6f60!important;color:#fff!important}
   .pl-table td{background:#fff!important;color:#111!important}
-  .pl-all tr.st-replace td,.pl-all tr.st-new-a td{background:#fff4e8!important}
+  .pl-all tr.st-replace td,#plRepTable tr.st-replace td{background:#fff4e8!important;color:#8f3f17!important}
+  .pl-all tr.st-new-a td,#plRepTable tr.st-new-a td{background:#e8f6ff!important;color:#005b85!important}
 }
 .ph{display:none}
 </style>
@@ -1344,7 +1345,7 @@ function buildPrintRows(){
     const noAfter=baseNew?currentNo:(s.nNo||'CUSTOM');
     const moldNoCell=st2==='new-a'?'新規':`${String(noBefore)} → ${String(noAfter)}`;
     const stLabel=`${s.st}(${ST[s.st]?.range||''})`;
-    return `<tr>
+    return `<tr class="st-${st2}">
       <td>${escHtml(moldNoCell)}</td>
       <td>${escHtml(stLabel)}</td>
       <td>${escHtml(`${bShape} → ${aShape}`)}</td>
@@ -1385,7 +1386,8 @@ function doPrint(){
   const html=`<!doctype html>
 <html lang="ja"><head><meta charset="UTF-8"><title>金型入替計画書</title>
 <style>
-*{box-sizing:border-box}body{font-family:'Noto Sans JP',sans-serif;color:#111;margin:10mm}
+*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+body{font-family:'Noto Sans JP',sans-serif;color:#111;margin:10mm}
 h1{font-size:18px;margin:0 0 2px}p{font-size:12px;margin:0}
 .meta{border-bottom:1px solid #333;padding-bottom:6px;margin-bottom:10px}
 .box{border:1px solid #333;padding:8px 10px;margin-bottom:10px}
@@ -1397,7 +1399,8 @@ h1{font-size:18px;margin:0 0 2px}p{font-size:12px;margin:0}
 .pt tfoot{display:table-footer-group}
 .pt tr{break-inside:avoid;page-break-inside:avoid}
 .empty{padding:8px;border:1px dashed #999;background:#f8f8f8;color:#555}
-.st-replace td,.st-new-a td{background:#fff4e8}
+.st-replace td{background:#fff4e8;color:#8f3f17}
+.st-new-a td{background:#e8f6ff;color:#005b85}
 @page{size:A4 portrait;margin:10mm}
 </style></head><body>
 <div class="meta">
