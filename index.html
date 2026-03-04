@@ -1949,7 +1949,7 @@ function addCustomCand(){
   const sh=document.getElementById('cf-sh').value, sz=document.getElementById('cf-sz').value.trim();
   const dt=document.getElementById('cf-dt').value.trim(), st=document.getElementById('cf-st').value;
   if(!sz){toast('サイズを入力してください','warn');return;}
-  cands.unshift({id:'cu-'+(cidCnt++),shape:sh,size:sz,detail:dt||'カスタム',range:st,no:'CUSTOM'});
+  cands.unshift({id:'cu-'+(cidCnt++),shape:sh,size:sz,detail:dt,range:st,no:'CUSTOM'});
   document.getElementById('cf-sz').value=''; document.getElementById('cf-dt').value='';
   syncCandidateState();
   queueAutoSave();
@@ -2347,7 +2347,7 @@ function addCmCandidate(){
     if(!target){ toast('候補が見つかりません','warn'); closeCmOv(); return; }
     target.shape=sh;
     target.size=sz;
-    target.detail=dt||'カスタム';
+    target.detail=dt;
     target.no='CUSTOM';
     syncCandidateState();
     queueAutoSave();
@@ -2363,7 +2363,7 @@ function addCmCandidate(){
     id,
     shape:sh,
     size:sz,
-    detail:dt||'カスタム',
+    detail:dt,
     range:s.st,
     no:'CUSTOM'
   });
