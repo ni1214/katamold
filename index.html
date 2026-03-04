@@ -1343,25 +1343,32 @@ function buildPrintRows(){
     const t=normText(v);
     return !!(t&&t!=='―'&&t!=='空き');
   };
+  const isEmptyShape=(shape)=>normText(shape)==='―';
+  const toShapeLabel=(shape)=>isEmptyShape(shape)?'空きスロット':shape;
   const withDetail=(size,detail)=>{
     const base=normText(size)||'―';
     return hasVisibleDetail(detail)?`${base} (${normText(detail)})`:base;
   };
+  const toSizeLabel=(size,detail,shape)=>isEmptyShape(shape)?'空き':withDetail(size,detail);
 
   const allRows=sorted.map((s,i)=>{
     const st2=slotStat(s);
     const shape=pickOverlayValue(s,'nShape','shape')||'―';
     const size=pickOverlayValue(s,'nSize','size')||'―';
     const detail=pickOverlayValue(s,'nDetail','detail')||'';
-    const sizeCell=withDetail(size,detail);
+    const shapeCell=toShapeLabel(shape);
+    const sizeCell=toSizeLabel(size,detail,shape);
     const nextNoRaw=(s.nNo===undefined||s.nNo===null)?'':String(s.nNo).trim();
     const moldNo=(nextNoRaw&&nextNoRaw.toUpperCase()!=='CUSTOM')?nextNoRaw:(s.no||'―');
+    const moldNoCell=(String(moldNo)==='―')
+      ?(st2==='new-a'?'新規スロット':(st2==='empty'?'空きスロット':'―'))
+      :String(moldNo);
     const stLabel=`${s.st}(${ST[s.st]?.range||''})`;
     return `<tr class="st-${st2}">
       <td>${i+1}</td>
-      <td>${escHtml(String(moldNo))}</td>
+      <td>${escHtml(moldNoCell)}</td>
       <td>${escHtml(stLabel)}</td>
-      <td>${escHtml(shape)}</td>
+      <td>${escHtml(shapeCell)}</td>
       <td>${escHtml(sizeCell)}</td>
     </tr>`;
   }).join('');
@@ -1377,15 +1384,17 @@ function buildPrintRows(){
     const aShape=baseNew?(s.shape||'―'):(pickOverlayValue(s,'nShape','shape')||'―');
     const aSize=baseNew?(s.size||'―'):(pickOverlayValue(s,'nSize','size')||'―');
     const aDetail=baseNew?(s.detail||''):(pickOverlayValue(s,'nDetail','detail')||'');
-    const bSizeCell=withDetail(bSize,bDetail);
-    const aSizeCell=withDetail(aSize,aDetail);
-    const moldNoCell=st2==='new-a'?'新規':String(currentNo);
+    const bShapeCell=toShapeLabel(bShape);
+    const aShapeCell=toShapeLabel(aShape);
+    const bSizeCell=toSizeLabel(bSize,bDetail,bShape);
+    const aSizeCell=toSizeLabel(aSize,aDetail,aShape);
+    const moldNoCell=st2==='new-a'?'新規スロット':String(currentNo);
     const stLabel=`${s.st}(${ST[s.st]?.range||''})`;
     return `<tr class="st-${st2}">
       <td>${i+1}</td>
       <td>${escHtml(moldNoCell)}</td>
       <td>${escHtml(stLabel)}</td>
-      <td>${escHtml(`${bShape} → ${aShape}`)}</td>
+      <td>${escHtml(`${bShapeCell} → ${aShapeCell}`)}</td>
       <td>${escHtml(`${bSizeCell} → ${aSizeCell}`)}</td>
     </tr>`;
   }).join('');
