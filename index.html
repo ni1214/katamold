@@ -60,6 +60,19 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
 .btn.warn{border-color:var(--accent2);color:var(--accent2)}
 .btn.warn:hover{background:var(--accent2);color:#fff}
 .btn.on{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700}
+.btn:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+  border-color:var(--border)!important;
+  color:var(--text-dim)!important;
+  background:var(--steel)!important;
+  box-shadow:none!important;
+}
+.btn:disabled:hover{
+  border-color:var(--border)!important;
+  color:var(--text-dim)!important;
+  background:var(--steel)!important;
+}
 .print-icon-btn{
   width:calc(38px * var(--font-scale));
   min-width:calc(38px * var(--font-scale));
@@ -507,7 +520,7 @@ header{background:linear-gradient(135deg,#0a1628,#162236,#0a1628);border-bottom:
       </div>
       <!-- 編集モードの切替ボタン -->
       <button class="btn warn" id="editBtn" onclick="startEditing()" style="display:none;">✏️ 編集開始</button>
-      <button class="btn ok" id="endBtn" onclick="endEditing()" style="display:none;">✔ 編集終了（解放）</button>
+      <button class="btn ok" id="endBtn" onclick="endEditing()" disabled>✔ 編集終了（解放）</button>
       <button id="saveJsonBtn" class="btn ok" onclick="driveSaveNow(true)" style="transition:all .2s">☁ Drive保存</button>
       <button class="btn" id="amadaLinkBtn" onclick="openAmadaCatalog()">🔗 AMADA金型</button>
       <button class="btn icon-btn" id="guideBtn" onclick="openGuideOv()" title="ステーション表" aria-label="ステーション表">📘</button>
@@ -3018,20 +3031,29 @@ function applyEditUi(lock){
   if(!lock){
     editing=false;
     if(eb) eb.style.display='none';
-    if(endb) endb.style.display='none';
+    if(endb){
+      endb.style.display='';
+      endb.disabled=true;
+    }
     setReadonlyNotice(null);
     return;
   }
   if(lock.ownerId===sessionId){
     editing=true;
     if(eb) eb.style.display='none';
-    if(endb) endb.style.display='';
+    if(endb){
+      endb.style.display='';
+      endb.disabled=false;
+    }
     setReadonlyNotice(null);
     return;
   }
   editing=false;
   if(eb) eb.style.display='none';
-  if(endb) endb.style.display='none';
+  if(endb){
+    endb.style.display='';
+    endb.disabled=true;
+  }
   setReadonlyNotice(lock);
 }
 
