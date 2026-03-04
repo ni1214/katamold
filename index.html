@@ -1338,11 +1338,22 @@ function buildPrintRows(){
     if(so!==0) return so;
     return (Number(a.num)||0)-(Number(b.num)||0);
   });
+  const normText=(v)=>((v===undefined||v===null)?'':String(v).trim());
+  const hasVisibleDetail=(v)=>{
+    const t=normText(v);
+    return !!(t&&t!=='―'&&t!=='空き');
+  };
+  const withDetail=(size,detail)=>{
+    const base=normText(size)||'―';
+    return hasVisibleDetail(detail)?`${base} (${normText(detail)})`:base;
+  };
 
   const allRows=sorted.map((s,i)=>{
     const st2=slotStat(s);
     const shape=s.nShape||s.shape||'―';
     const size=s.nSize||s.size||'―';
+    const detail=s.nDetail||s.detail||'';
+    const sizeCell=withDetail(size,detail);
     const nextNoRaw=(s.nNo===undefined||s.nNo===null)?'':String(s.nNo).trim();
     const moldNo=(nextNoRaw&&nextNoRaw.toUpperCase()!=='CUSTOM')?nextNoRaw:(s.no||'―');
     const stLabel=`${s.st}(${ST[s.st]?.range||''})`;
@@ -1351,7 +1362,7 @@ function buildPrintRows(){
       <td>${escHtml(String(moldNo))}</td>
       <td>${escHtml(stLabel)}</td>
       <td>${escHtml(shape)}</td>
-      <td>${escHtml(size)}</td>
+      <td>${escHtml(sizeCell)}</td>
     </tr>`;
   }).join('');
 
@@ -1362,8 +1373,12 @@ function buildPrintRows(){
     const currentNo=(s.no===0||s.no===undefined||s.no===null)?'―':s.no;
     const bShape=baseNew?'―':(s.oShape||s.shape||'―');
     const bSize=baseNew?'―':(s.oSize||s.size||'―');
+    const bDetail=baseNew?'':(s.oDetail||s.detail||'');
     const aShape=baseNew?(s.shape||'―'):(s.nShape||'―');
     const aSize=baseNew?(s.size||'―'):(s.nSize||'―');
+    const aDetail=baseNew?(s.detail||''):(s.nDetail||'');
+    const bSizeCell=withDetail(bSize,bDetail);
+    const aSizeCell=withDetail(aSize,aDetail);
     const moldNoCell=st2==='new-a'?'新規':String(currentNo);
     const stLabel=`${s.st}(${ST[s.st]?.range||''})`;
     return `<tr class="st-${st2}">
@@ -1371,7 +1386,7 @@ function buildPrintRows(){
       <td>${escHtml(moldNoCell)}</td>
       <td>${escHtml(stLabel)}</td>
       <td>${escHtml(`${bShape} → ${aShape}`)}</td>
-      <td>${escHtml(`${bSize} → ${aSize}`)}</td>
+      <td>${escHtml(`${bSizeCell} → ${aSizeCell}`)}</td>
     </tr>`;
   }).join('');
   return { allRows, repRows, hasChanged:changed.length>0 };
